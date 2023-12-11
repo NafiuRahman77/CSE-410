@@ -72,6 +72,27 @@ struct Point
    
 };
 
+
+
+class Triangle{
+public:
+    Point a, b, c;
+    Triangle(Point a, Point b, Point c){
+        this->a = a;
+        this->b = b;
+        this->c = c;
+    }
+
+    void draw(){
+        glBegin(GL_TRIANGLES);{
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+        }glEnd();
+    }
+};
+
+
 struct Point pos(100,100,0), u(0,0,1), r(-1/sqrt(2.0), 1/sqrt(2.0),0), l(-1/sqrt(2.0), -1/sqrt(2.0), 0);
 
 
@@ -92,6 +113,26 @@ void drawAxes(){
 }
 
 
+double maxTriangleLength = 1.6;
+double triangleLength = 1.6;
+
+void drawPyramid(){
+	double diff = maxTriangleLength - triangleLength;
+    diff = diff/3.0;
+    for(int i=0;i<4;i++){
+
+        glPushMatrix();{
+            glColor3f((i+1)%2, i%2, 1.0f);  // purple / cyan
+            glRotatef(90*i,0,1,0);
+            glTranslatef(diff,diff,diff);
+            glScaled(triangleLength,triangleLength,triangleLength);
+            Triangle t1(Point(0, 0, 20), Point(0, 20, 0), Point(20, 0, 0));
+			t1.draw();
+        }glPopMatrix();
+
+    }
+}
+
 void drawGrid(){
 	if(drawgrid==1){
 		glColor3f(0.6, 0.6, 0.6);	//grey
@@ -111,6 +152,87 @@ void drawGrid(){
 		}glEnd();
 	}
 }
+
+// https://www.songho.ca/opengl/gl_sphere.html
+vector<vector<Point>> buildUnitPositiveX2(int subdivision)
+{
+    const float DEG2RAD = acos(-1) / 180.0f;
+
+    // compute the number of vertices per row, 2^n + 1
+    int pointsPerRow = (int)pow(2, subdivision) + 1;
+    vector<float> vertices;
+    float n1[3];        // normal of longitudinal plane rotating along Y-axis
+    float n2[3];        // normal of latitudinal plane rotating along Z-axis
+    float v[3];         // direction vector intersecting 2 planes, n1 x n2
+    float a1;           // longitudinal angle along Y-axis
+    float a2;           // latitudinal angle along Z-axis
+
+
+    // rotate latitudinal plane from 45 to -45 degrees along Z-axis (top-to-bottom)
+    for(unsigned int i = 0; i < pointsPerRow; ++i)
+    {
+        // normal for latitudinal plane
+        // if latitude angle is 0, then normal vector of latitude plane is n2=(0,1,0)
+        // therefore, it is rotating (0,1,0) vector by latitude angle a2
+        a2 = DEG2RAD * (45.0f - 90.0f * i / (pointsPerRow - 1));
+        n2[0] = -sin(a2);
+        n2[1] = cos(a2);
+        n2[2] = 0;
+
+        // rotate longitudinal plane from -45 to 45 along Y-axis (left-to-right)
+        for(unsigned int j = 0; j < pointsPerRow; ++j)
+        {
+            // normal for longitudinal plane
+            // if longitude angle is 0, then normal vector of longitude is n1=(0,0,-1)
+            // therefore, it is rotating (0,0,-1) vector by longitude angle a1
+            a1 = DEG2RAD * (-45.0f + 90.0f * j / (pointsPerRow - 1));
+            n1[0] = -sin(a1);
+            n1[1] = 0;
+            n1[2] = -cos(a1);
+
+            // find direction vector of intersected line, n1 x n2
+            v[0] = n1[1] * n2[2] - n1[2] * n2[1];
+            v[1] = n1[2] * n2[0] - n1[0] * n2[2];
+            v[2] = n1[0] * n2[1] - n1[1] * n2[0];
+
+            // normalize direction vector
+            float scale = 1 / sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+            v[0] *= scale;
+            v[1] *= scale;
+            v[2] *= scale;
+
+            // add a vertex into array
+            vertices.push_back(v[0]);
+            vertices.push_back(v[1]);
+            vertices.push_back(v[2]);
+        }
+    }
+
+    vector<Point> points_;
+	for(int i=0;i<vertices.size();i+=3)
+	{
+		if (i + 2 < vertices.size()) // Check if the indices are within bounds
+    {
+        points_.push_back({vertices[i], vertices[i + 1], vertices[i + 2]});
+    }
+	}
+
+	vector<vector<Point>> points;
+	for(int i=0;i<pointsPerRow;i++)
+	{
+		vector<Point> temp;
+		for(int j=0;j<pointsPerRow;j++)
+		{
+			temp.push_back(points_[i*pointsPerRow+j]);
+		}
+		points.push_back(temp);
+	}
+
+    return points;
+}
+
+
+
 
 
 void keyboardListener(unsigned char key, int x,int y){
@@ -304,32 +426,20 @@ void display(){
 	drawAxes();
 	drawGrid();
 
-		//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
+	//draw triangle
+	//Triangle t1(Point(0, 0, 50), Point(50, 0, 0), Point(0, 50, 0));
+	//t1.draw();
+	drawPyramid();
+
+	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
-
 
 
 void init(){
 	//codes for initialization
 	drawgrid=1;
 	drawaxes=1;
-
-	// pos.x = 100;
-	// pos.y = 100;
-	// pos.z = 0;
-
-	// l.x = -1/sqrt(2.0);
-	// l.y = -1/sqrt(2.0);
-	// l.z = 0;
-
-	// r.x = -1/sqrt(2.0);
-	// r.y = 1/sqrt(2.0);
-	// r.z = 0;
-
-	// u.x = 0;
-	// u.y = 0;
-	// u.z = 1;
 
 	//clear the screen
 	glClearColor(0,0,0,0);

@@ -51,6 +51,24 @@ point Rotation(point v, point reference, int dir){
 }
 
 
+class Triangle{
+public:
+    point a, b, c;
+    Triangle(point a, point b, point c){
+        this->a = a;
+        this->b = b;
+        this->c = c;
+    }
+
+    void draw(){
+        glBegin(GL_TRIANGLES);{
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+        }glEnd();
+    }
+};
+
 
 void drawAxes(){
 	if(drawaxes==1){
