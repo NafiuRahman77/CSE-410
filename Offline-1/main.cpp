@@ -10,12 +10,8 @@ int drawgrid;
 int drawaxes;
 
 double sphereRadius = 0;
-double sphere_stacks = 25;
-double sphere_slices = 30;
 double translate_value = 20;
 
-int clockwise = 1;
-int counterclockwise = -1;
 int rotate_angle = 2;
 double rotation_angle = pi * rotate_angle / 180;
 double CYLINDER_ANGLE = 70.5287794;
@@ -142,7 +138,6 @@ void drawPyramid()
 			double scaleFactor = 1 - sqrt(2) * sphereRadius;
 			double translateFactor = 1 / sqrt(3) * sphereRadius;
 			glTranslatef(translateFactor, translateFactor, translateFactor);
-			// glTranslatef(sphereRadius/sqrt(3), sphereRadius/sqrt(3), sphereRadius/sqrt(3));
 			glScalef(scaleFactor, scaleFactor, scaleFactor);
 			Triangle t1(Point(0, 0, 1), Point(0, 1, 0), Point(1, 0, 0));
 			t1.draw();
@@ -164,7 +159,6 @@ void drawPyramid()
 				double scaleFactor = 1 - sqrt(2) * sphereRadius;
 				double translateFactor = 1 / sqrt(3) * sphereRadius;
 				glTranslatef(translateFactor, translateFactor, translateFactor);
-				// glTranslatef(sphereRadius/sqrt(3), sphereRadius/sqrt(3), sphereRadius/sqrt(3));
 				glScalef(scaleFactor, scaleFactor, scaleFactor);
 				Triangle t1(Point(0, 0, 1), Point(0, 1, 0), Point(1, 0, 0));
 				t1.draw();
@@ -280,18 +274,21 @@ vector<vector<Point>> buildUnitPositiveX(int subdivision)
 // draw one segment of sphere
 void drawSphereSegment()
 {
-	vector<vector<Point>> points = buildUnitPositiveX(3);
-	glScalef(sphereRadius, sphereRadius, sphereRadius);
-	for (int i = 0; i < points.size() - 1; i++)
+	vector<vector<Point>> points = buildUnitPositiveX(4);
+
+	for (int i = 0; i < points.size(); i++)
 	{
-		for (int j = 0; j < points[i].size() - 1; j++)
+		for (int j = 0; j < points[i].size(); j++)
 		{
 			glBegin(GL_QUADS);
 			{
-				glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
-				glVertex3f(points[i][j + 1].x, points[i][j + 1].y, points[i][j + 1].z);
-				glVertex3f(points[i + 1][j + 1].x, points[i + 1][j + 1].y, points[i + 1][j + 1].z);
-				glVertex3f(points[i + 1][j].x, points[i + 1][j].y, points[i + 1][j].z);
+				if (i < points.size() - 1 && j < points[i].size() - 1)
+				{
+					glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
+					glVertex3f(points[i][j + 1].x, points[i][j + 1].y, points[i][j + 1].z);
+					glVertex3f(points[i + 1][j + 1].x, points[i + 1][j + 1].y, points[i + 1][j + 1].z);
+					glVertex3f(points[i + 1][j].x, points[i + 1][j].y, points[i + 1][j].z);
+				}
 			}
 			glEnd();
 		}
@@ -301,95 +298,96 @@ void drawSphereSegment()
 // draw all six segments of sphere
 void drawSphere()
 {
-	double dist = 1 - sqrt(2) * sphereRadius;
-	double translateFactor[4][3] = {{dist, 0, 0}, {0, 0, -dist}, {-dist, 0, 0}, {0, 0, dist}};
 
-	for (int i = 0; i < 4; i++)
+	double dist = 1 - sqrt(2) * sphereRadius;
+	double translateFactor[6][3] = {{dist, 0, 0}, {0, 0, -dist}, {-dist, 0, 0}, {0, 0, dist}, {0, dist, 0}, {0, -dist, 0}};
+	double rotFactor[2][3] = {{1, 0, 0}, {-1, 0, 0}};
+	for (int i = 0; i < 6; i++)
 	{
-		glColor3f((i + 1) % 2, (i % 2), 0);
 		glPushMatrix();
 		glTranslatef(translateFactor[i][0], translateFactor[i][1], translateFactor[i][2]);
-		glRotatef(i * 90, 0, 1, 0);
+		if (i <= 3)
+		{
+			glColor3f((i + 1) % 2, (i % 2), 0);
+			glRotatef(i * 90, 0, 1, 0);
+		}
+		else
+		{
+			glColor3f(0, 0, 1);
+			glRotatef(90 * rotFactor[i - 4][0], 0, 0, 1);
+		}
+		glScalef(sphereRadius, sphereRadius, sphereRadius);
 		drawSphereSegment();
 		glPopMatrix();
 	}
+}
 
-	glColor3f(0, 0, 1);
+void drawCylinderSegment(float angle = CYLINDER_ANGLE, float radius = sphereRadius, float height = sqrt(2) - 2 * sphereRadius)
+{
+	const int numSegments =(int)(angle * 2 / 0.1) + 1;
+	double t = (1 - sqrt(2) * radius)/2;
 
-	double translateFactor2[2][3] = {{0, dist, 0}, {0, -dist, 0}};
-	double rotFactor[2][3] = {{1, 0, 0}, {-1, 0, 0}};
-	for (int i = 0; i < 2; i++)
-	{
-
+	vector<Point> points;
+	glPushMatrix();
+		glTranslatef(t, t, 0);
 		glPushMatrix();
-		glTranslatef(0, translateFactor2[i][1], 0);
-		glRotatef(90 * rotFactor[i][0], 0, 0, 1);
-		drawSphereSegment();
+		glRotatef(45, 0, 0, 1);
+		glTranslatef(0.0f, -height / 2, 0.0f);
+		glRotatef(angle / 2, 0.0f, 1.0f, 0.0f);
+		for (int i = 0; i <= numSegments; i++)
+		{
+			float x = radius * cos(i * 0.1);
+			float z = radius * sin(i * 0.1);
+			points.push_back(Point(x, 0.0f, z));
+		}
+		glBegin(GL_QUAD_STRIP);
+		for (int i = 0; i < points.size(); i++)
+		{
+			glVertex3f(points[i].x, points[i].y, points[i].z);
+			glVertex3f(points[i].x, points[i].y + height, points[i].z);
+		}
+		glEnd();
+		glPopMatrix();
+	glPopMatrix();
+}
+
+void drawAllSegmentsCylinder()
+{
+
+	// yellow color
+	glColor3f(1, 1, 0);
+
+	// 8 cylinder segments (parralel to XY and YZ plane)
+
+	for (int j = 0; j < 4; j++)
+	{
+		glPushMatrix();
+		glRotatef(j * 90, 0, 1, 0);
+		drawCylinderSegment();
 		glPopMatrix();
 	}
-}
 
-void drawCylinderSegment(float angle, float radius, float height) {
-    const int numSegments = 100;
-    const float segmentAngle = angle * 3.1415f / 180.0f;
+	glPushMatrix();
+		glRotatef(180, 1, 0, 0);
+		for (int j = 0; j < 4; j++)
+		{
+			glPushMatrix();
+			glRotatef(j * 90, 0, 1, 0);
+			drawCylinderSegment();
+			glPopMatrix();
+		}
 
-    glPushMatrix();
-        glTranslatef(0.0f, -height/2, 0.0f);
-        glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
-        glBegin(GL_TRIANGLE_STRIP);
-        for (int i = 0; i <= numSegments; ++i) {
-            float theta = i * segmentAngle / numSegments;
+		// 4 cylinder segments (parallel to XZ plane)
 
-            float x = radius*cos(theta);
-            float z = radius*sin(theta);
-
-            glVertex3f(x, 0.0f, z);
-            glVertex3f(x, height*1.0f, z);
-        }
-        glEnd();
-    glPopMatrix();
-}
-
-void drawAllSegmentsCylinder(){
-    double radius = sphereRadius; 
-    double height = sqrt(2) - 2*radius;
-    double t = (1 - sqrt(2) * radius)/2;
-
-    //yellow color
-	glColor3f(1, 1, 0);
-    
-    // 8 cylinder segments (parralel to XY and YZ plane)
-    for (int i = 0; i < 2; i++) {
-        glPushMatrix();
-            glRotatef(i * 180, 1, 0, 0);
-            for (int j = 0; j < 4; j++) {
-                glPushMatrix();
-                    glRotatef(j * 90, 0, 1, 0);
-                    glPushMatrix();
-                        glTranslatef(t, t, 0);
-                        glRotatef(45, 0, 0, 1);
-                        drawCylinderSegment(CYLINDER_ANGLE, radius, height);
-                    glPopMatrix();
-                glPopMatrix();
-            }
-        glPopMatrix();
-    }   
-    
-    // 4 cylinder segments (parallel to XZ plane)
-    for (int j = 0; j < 4; j++) {
-        glPushMatrix();
-            glRotatef(j * 90, 0, 1, 0);
-            glPushMatrix();
-                glRotatef(90, 1, 0, 0);
-                glPushMatrix();
-                    glTranslatef(t, t, 0);
-                    glRotatef(45, 0, 0, 1);
-                    drawCylinderSegment(CYLINDER_ANGLE, radius, height);
-                glPopMatrix();
-            glPopMatrix();
-        glPopMatrix();
-    }
-
+		glRotatef(270, 1, 0, 0);
+		for (int j = 0; j < 4; j++)
+		{
+			glRotatef(j * 90, 0, 1, 0);
+			glPushMatrix();
+			drawCylinderSegment();
+			glPopMatrix();
+		}
+	glPopMatrix();
 }
 
 void keyboardListener(unsigned char key, int x, int y)
@@ -474,18 +472,22 @@ void keyboardListener(unsigned char key, int x, int y)
 
 	case ',':
 		sphereRadius += 0.05;
-		if (sphereRadius > 1/sqrt(2))
-			sphereRadius = 1/sqrt(2);
+		// triangleLength -= 0.05;
+		if (sphereRadius > 1 / sqrt(2.0))
+			sphereRadius = 1 / sqrt(2.0);
+		// if (triangleLength < 0)
+		// 	triangleLength = 0;
 		break;
-	
+
 	case '.':
-		
+
 		sphereRadius -= 0.05;
+		// triangleLength += 0.05 ;
 		if (sphereRadius < 0)
 			sphereRadius = 0;
+		// if (triangleLength > 1 / sqrt(2.0))
+		// 	triangleLength = 1 / sqrt(2.0);
 		break;
-	
-
 
 	default:
 		break;
