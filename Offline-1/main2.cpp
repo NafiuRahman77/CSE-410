@@ -320,6 +320,8 @@ void resetScene(){
     objectRotationVerAngle = 0;
 }
 
+
+
 //! display()
 void display()
 {
@@ -346,8 +348,8 @@ void display()
         glPushMatrix();
             // glRotatef(objectRotationVerAngle, 1, 0, -1);
             if (isAxes)         drawAxes(2);
-            if (isOctahedron)   drawOctahedron();
-            if (isSphere)       drawAllSegmentsSphere();
+            // if (isOctahedron)   drawOctahedron();
+            // if (isSphere)       drawAllSegmentsSphere();
             if (isCylinder)     drawAllSegmentsCylinder();
         // glPopMatrix();
     glPopMatrix();

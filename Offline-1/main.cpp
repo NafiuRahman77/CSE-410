@@ -9,7 +9,7 @@ using namespace std;
 int drawgrid;
 int drawaxes;
 
-double sphereRadius = 1 / sqrt(2.0);
+double sphereRadius = 0;
 double sphere_stacks = 25;
 double sphere_slices = 30;
 double translate_value = 20;
@@ -18,6 +18,7 @@ int clockwise = 1;
 int counterclockwise = -1;
 int rotate_angle = 2;
 double rotation_angle = pi * rotate_angle / 180;
+double CYLINDER_ANGLE = 70.5287794;
 
 struct Point
 {
@@ -328,6 +329,69 @@ void drawSphere()
 	}
 }
 
+void drawCylinderSegment(float angle, float radius, float height) {
+    const int numSegments = 100;
+    const float segmentAngle = angle * 3.1415f / 180.0f;
+
+    glPushMatrix();
+        glTranslatef(0.0f, -height/2, 0.0f);
+        glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= numSegments; ++i) {
+            float theta = i * segmentAngle / numSegments;
+
+            float x = radius*cos(theta);
+            float z = radius*sin(theta);
+
+            glVertex3f(x, 0.0f, z);
+            glVertex3f(x, height*1.0f, z);
+        }
+        glEnd();
+    glPopMatrix();
+}
+
+void drawAllSegmentsCylinder(){
+    double radius = sphereRadius; 
+    double height = sqrt(2) - 2*radius;
+    double t = (1 - sqrt(2) * radius)/2;
+
+    //yellow color
+	glColor3f(1, 1, 0);
+    
+    // 8 cylinder segments (parralel to XY and YZ plane)
+    for (int i = 0; i < 2; i++) {
+        glPushMatrix();
+            glRotatef(i * 180, 1, 0, 0);
+            for (int j = 0; j < 4; j++) {
+                glPushMatrix();
+                    glRotatef(j * 90, 0, 1, 0);
+                    glPushMatrix();
+                        glTranslatef(t, t, 0);
+                        glRotatef(45, 0, 0, 1);
+                        drawCylinderSegment(CYLINDER_ANGLE, radius, height);
+                    glPopMatrix();
+                glPopMatrix();
+            }
+        glPopMatrix();
+    }   
+    
+    // 4 cylinder segments (parallel to XZ plane)
+    for (int j = 0; j < 4; j++) {
+        glPushMatrix();
+            glRotatef(j * 90, 0, 1, 0);
+            glPushMatrix();
+                glRotatef(90, 1, 0, 0);
+                glPushMatrix();
+                    glTranslatef(t, t, 0);
+                    glRotatef(45, 0, 0, 1);
+                    drawCylinderSegment(CYLINDER_ANGLE, radius, height);
+                glPopMatrix();
+            glPopMatrix();
+        glPopMatrix();
+    }
+
+}
+
 void keyboardListener(unsigned char key, int x, int y)
 {
 	switch (key)
@@ -407,6 +471,21 @@ void keyboardListener(unsigned char key, int x, int y)
 		u.z = u.z * cos(rotation_angle) + (u ^ l).z * sin(rotation_angle);
 
 		break;
+
+	case ',':
+		sphereRadius += 0.05;
+		if (sphereRadius > 1/sqrt(2))
+			sphereRadius = 1/sqrt(2);
+		break;
+	
+	case '.':
+		
+		sphereRadius -= 0.05;
+		if (sphereRadius < 0)
+			sphereRadius = 0;
+		break;
+	
+
 
 	default:
 		break;
@@ -517,9 +596,11 @@ void display()
 
 	// draw triangle
 
-	// drawPyramid();
+	drawPyramid();
 
 	drawSphere();
+
+	drawAllSegmentsCylinder();
 
 	// ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
