@@ -9,12 +9,14 @@ using namespace std;
 int drawgrid;
 int drawaxes;
 
-double sphereRadius = 0;
+double sphereRadius = 1 / (2 * sqrt(2.0));
 double translate_value = 20;
 
 int rotate_angle = 2;
 double rotation_angle = pi * rotate_angle / 180;
 double CYLINDER_ANGLE = 70.5287794;
+
+double ballRot = 0;
 
 struct Point
 {
@@ -103,7 +105,8 @@ public:
 	}
 };
 
-struct Point pos(2, 2, 2), u(0, 1, 0), r(2, 0, -2), l(-2, -2, -2);
+struct Point pos(3, 3, 5), u(0, 0, 1), r(-1 / sqrt(2.0), 1 / sqrt(2.0), 0), l(-1 / sqrt(2.0), -1 / sqrt(2.0), -2);
+struct Point ballPos(0, 0, sphereRadius / 2.0);
 
 void drawAxes()
 {
@@ -124,270 +127,149 @@ void drawAxes()
 		glEnd();
 	}
 }
-
-void drawPyramid()
+void drawChessBoard()
 {
+	int gridSize = 8; // Adjust the size of the grid as needed
+	float squareSize = 1.0f;
 
-	for (int i = 0; i < 4; i++)
+	for (int i = -gridSize; i < gridSize; ++i)
 	{
-
-		glPushMatrix();
+		for (int j = -gridSize; j < gridSize; ++j)
 		{
-			glColor3f((i + 1) % 2, i % 2, 1.0f); // purple / cyan
-			glRotatef(90 * i, 0, 1, 0);
-			double scaleFactor = 1 - sqrt(2) * sphereRadius;
-			double translateFactor = 1 / sqrt(3) * sphereRadius;
-			glTranslatef(translateFactor, translateFactor, translateFactor);
-			glScalef(scaleFactor, scaleFactor, scaleFactor);
-			Triangle t1(Point(0, 0, 1), Point(0, 1, 0), Point(1, 0, 0));
-			t1.draw();
-		}
-		glPopMatrix();
-	}
+			float x = i * squareSize;
+			float y = j * squareSize;
 
-	// rotate by 180
-	glPushMatrix();
-	{
-		glRotatef(180, 1, 0, 0);
-		for (int i = 0; i < 4; i++)
-		{
+			if ((i + j) % 2 == 0)
+				glColor3f(1.0, 1.0, 1.0); // White square
+			else
+				glColor3f(0.0, 0.0, 0.0); // Black square
 
-			glPushMatrix();
-			{
-				glColor3f((i + 1) % 2, i % 2, 1.0f); // purple / cyan
-				glRotatef(90 * i, 0, 1, 0);
-				double scaleFactor = 1 - sqrt(2) * sphereRadius;
-				double translateFactor = 1 / sqrt(3) * sphereRadius;
-				glTranslatef(translateFactor, translateFactor, translateFactor);
-				glScalef(scaleFactor, scaleFactor, scaleFactor);
-				Triangle t1(Point(0, 0, 1), Point(0, 1, 0), Point(1, 0, 0));
-				t1.draw();
-			}
-			glPopMatrix();
-		}
-	}
-	glPopMatrix();
-}
-
-void drawGrid()
-{
-	if (drawgrid == 1)
-	{
-		glColor3f(0.6, 0.6, 0.6); // grey
-		glBegin(GL_LINES);
-		{
-			for (int i = -8; i <= 8; i++)
-			{
-				if (i == 0)
-					continue; // SKIP the MAIN axes
-
-				// lines parallel to Y-axis
-				glVertex3f(i * 10, -90, 0);
-				glVertex3f(i * 10, 90, 0);
-
-				// lines parallel to X-axis
-				glVertex3f(-90, i * 10, 0);
-				glVertex3f(90, i * 10, 0);
-			}
-		}
-		glEnd();
-	}
-}
-
-// https://www.songho.ca/opengl/gl_sphere.html
-vector<vector<Point>> buildUnitPositiveX(int subdivision)
-{
-	const float DEG2RAD = acos(-1) / 180.0f;
-
-	// compute the number of vertices per row, 2^n + 1
-	int pointsPerRow = (int)pow(2, subdivision) + 1;
-	vector<float> vertices;
-	float n1[3]; // normal of longitudinal plane rotating along Y-axis
-	float n2[3]; // normal of latitudinal plane rotating along Z-axis
-	float v[3];	 // direction vector intersecting 2 planes, n1 x n2
-	float a1;	 // longitudinal angle along Y-axis
-	float a2;	 // latitudinal angle along Z-axis
-
-	// rotate latitudinal plane from 45 to -45 degrees along Z-axis (top-to-bottom)
-	for (unsigned int i = 0; i < pointsPerRow; ++i)
-	{
-		// normal for latitudinal plane
-		// if latitude angle is 0, then normal vector of latitude plane is n2=(0,1,0)
-		// therefore, it is rotating (0,1,0) vector by latitude angle a2
-		a2 = DEG2RAD * (45.0f - 90.0f * i / (pointsPerRow - 1));
-		n2[0] = -sin(a2);
-		n2[1] = cos(a2);
-		n2[2] = 0;
-
-		// rotate longitudinal plane from -45 to 45 along Y-axis (left-to-right)
-		for (unsigned int j = 0; j < pointsPerRow; ++j)
-		{
-			// normal for longitudinal plane
-			// if longitude angle is 0, then normal vector of longitude is n1=(0,0,-1)
-			// therefore, it is rotating (0,0,-1) vector by longitude angle a1
-			a1 = DEG2RAD * (-45.0f + 90.0f * j / (pointsPerRow - 1));
-			n1[0] = -sin(a1);
-			n1[1] = 0;
-			n1[2] = -cos(a1);
-
-			// find direction vector of intersected line, n1 x n2
-			v[0] = n1[1] * n2[2] - n1[2] * n2[1];
-			v[1] = n1[2] * n2[0] - n1[0] * n2[2];
-			v[2] = n1[0] * n2[1] - n1[1] * n2[0];
-
-			// normalize direction vector
-			float scale = 1 / sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-			v[0] *= scale;
-			v[1] *= scale;
-			v[2] *= scale;
-
-			// add a vertex into array
-			vertices.push_back(v[0]);
-			vertices.push_back(v[1]);
-			vertices.push_back(v[2]);
-		}
-	}
-
-	vector<Point> points_;
-	for (int i = 0; i < vertices.size(); i += 3)
-	{
-		if (i + 2 < vertices.size()) // Check if the indices are within bounds
-		{
-			points_.push_back({vertices[i], vertices[i + 1], vertices[i + 2]});
-		}
-	}
-
-	vector<vector<Point>> points;
-	for (int i = 0; i < pointsPerRow; i++)
-	{
-		vector<Point> temp;
-		for (int j = 0; j < pointsPerRow; j++)
-		{
-			temp.push_back(points_[i * pointsPerRow + j]);
-		}
-		points.push_back(temp);
-	}
-
-	return points;
-}
-
-// draw one segment of sphere
-void drawSphereSegment()
-{
-	vector<vector<Point>> points = buildUnitPositiveX(4);
-
-	for (int i = 0; i < points.size(); i++)
-	{
-		for (int j = 0; j < points[i].size(); j++)
-		{
 			glBegin(GL_QUADS);
 			{
-				if (i < points.size() - 1 && j < points[i].size() - 1)
-				{
-					glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
-					glVertex3f(points[i][j + 1].x, points[i][j + 1].y, points[i][j + 1].z);
-					glVertex3f(points[i + 1][j + 1].x, points[i + 1][j + 1].y, points[i + 1][j + 1].z);
-					glVertex3f(points[i + 1][j].x, points[i + 1][j].y, points[i + 1][j].z);
-				}
+				glVertex3f(x, y, 0);
+				glVertex3f(x + squareSize, y, 0);
+				glVertex3f(x + squareSize, y + squareSize, 0);
+				glVertex3f(x, y + squareSize, 0);
 			}
 			glEnd();
 		}
 	}
+
+	// draw a 4 by 4 red bounding wall
+	//  Draw a 4x4 red bounding box as a wall
+	float boxSize = 4.0f * squareSize;
+	float boxHeight = 0.5f; // Adjust the height of the wall as needed
+
+	float minX = -boxSize / 2.0f;
+	float maxX = boxSize / 2.0f;
+	float minY = -boxSize / 2.0f;
+	float maxY = boxSize / 2.0f;
+
+	float minZ = 0.0f;
+	float maxZ = boxHeight;
+
+	glColor3f(1.0, 0.0, 0.0); // Red color
+
+	glBegin(GL_QUADS);
+	{
+		// Front face
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+
+		// Back face
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 0);
+
+		// Left face
+		glVertex3f(minX, minY, minZ);
+		glVertex3f(minX, maxY, minZ);
+		glVertex3f(minX, maxY, maxZ);
+		glVertex3f(minX, minY, maxZ);
+
+		// Right face
+		glVertex3f(maxX, minY, minZ);
+		glVertex3f(maxX, maxY, minZ);
+		glVertex3f(maxX, maxY, maxZ);
+		glVertex3f(maxX, minY, maxZ);
+
+		// Top face
+		glVertex3f(minX, maxY, minZ);
+		glVertex3f(minX, maxY, maxZ);
+		glVertex3f(maxX, maxY, maxZ);
+		glVertex3f(maxX, maxY, minZ);
+
+		// Bottom face
+		glVertex3f(minX, minY, minZ);
+		glVertex3f(minX, minY, maxZ);
+		glVertex3f(maxX, minY, maxZ);
+		glVertex3f(maxX, minY, minZ);
+	}
+	glEnd();
 }
 
-// draw all six segments of sphere
+int sectorCount = 15;
+int stackCount = 15;
+
+vector<vector<Point>> vertices(sectorCount + 1, vector<Point>(stackCount + 1));
+
 void drawSphere()
 {
 
-	double dist = 1 - sqrt(2) * sphereRadius;
-	double translateFactor[6][3] = {{dist, 0, 0}, {0, 0, -dist}, {-dist, 0, 0}, {0, 0, dist}, {0, dist, 0}, {0, -dist, 0}};
-	double rotFactor[2][3] = {{1, 0, 0}, {-1, 0, 0}};
-	for (int i = 0; i < 6; i++)
+	float sectorStep = 2 * pi / sectorCount;
+	float stackStep = pi / stackCount;
+
+	float sectorAngle, stackAngle;
+
+	for (int i = 0; i <= sectorCount; i++)
 	{
-		glPushMatrix();
-		glTranslatef(translateFactor[i][0], translateFactor[i][1], translateFactor[i][2]);
-		if (i <= 3)
+		sectorAngle = i * sectorStep;
+		for (int j = 0; j <= stackCount; j++)
 		{
-			glColor3f((i + 1) % 2, (i % 2), 0);
-			glRotatef(i * 90, 0, 1, 0);
+			double theta1 = sectorStep * i;
+			// double theta2 = sectorStep * (i + 1);
+			double phi1 = pi / 2.0 - stackStep * j;
+			// double phi2 = pi / 2.0 - stackStep * (j + 1);
+
+			Point p(sphereRadius * cos(phi1) * cos(theta1), sphereRadius * cos(phi1) * sin(theta1), sphereRadius * sin(phi1));
+
+			vertices[i].push_back(p);
+			// Point p2(sphereRadius * cos(phi1) * cos(theta2), sphereRadius * cos(phi1) * sin(theta2), sphereRadius * sin(phi1));
+			// Point p3(sphereRadius * cos(phi2) * cos(theta1), sphereRadius * cos(phi2) * sin(theta1), sphereRadius * sin(phi2));
+			// Point p4(sphereRadius * cos(phi2) * cos(theta2), sphereRadius * cos(phi2) * sin(theta2), sphereRadius * sin(phi2));
+
+			// Triangle t1(p1, p3, p2);
+
+			// Triangle t2(p2, p3, p4);
+
+			// glColor3f(1, 0, 0);
+			// t1.draw();
+			// glColor3f(0, 1, 0);
+			// t2.draw();
 		}
-		else
-		{
-			glColor3f(0, 0, 1);
-			glRotatef(90 * rotFactor[i - 4][0], 0, 0, 1);
-		}
-		glScalef(sphereRadius, sphereRadius, sphereRadius);
-		drawSphereSegment();
-		glPopMatrix();
-	}
-}
-
-void drawCylinderSegment(float angle = CYLINDER_ANGLE, float radius = sphereRadius, float height = sqrt(2) - 2 * sphereRadius)
-{
-	const int numSegments =(int)(angle * 2 / 0.1) + 1;
-	double t = (1 - sqrt(2) * radius)/2;
-
-	vector<Point> points;
-	glPushMatrix();
-		glTranslatef(t, t, 0);
-		glPushMatrix();
-		glRotatef(45, 0, 0, 1);
-		glTranslatef(0.0f, -height / 2, 0.0f);
-		glRotatef(angle / 2, 0, 1, 0);
-		for (int i = 0; i <= numSegments; i++)
-		{
-			float x = radius * cos(i * 0.1);
-			float z = radius * sin(i * 0.1);
-			points.push_back(Point(x, 0.0f, z));
-		}
-		glBegin(GL_QUAD_STRIP);
-		for (int i = 0; i < points.size(); i++)
-		{
-			glVertex3f(points[i].x, points[i].y, points[i].z);
-			glVertex3f(points[i].x, points[i].y + height, points[i].z);
-		}
-		glEnd();
-		glPopMatrix();
-	glPopMatrix();
-}
-
-void drawAllSegmentsCylinder()
-{
-
-	// yellow color
-	glColor3f(1, 1, 0);
-
-	// 8 cylinder segments (parralel to XY and YZ plane)
-
-	for (int j = 0; j < 4; j++)
-	{
-		glPushMatrix();
-		glRotatef(j * 90, 0, 1, 0);
-		drawCylinderSegment();
-		glPopMatrix();
 	}
 
-	glPushMatrix();
-		glRotatef(180, 1, 0, 0);
-		for (int j = 0; j < 4; j++)
+	for (int i = 0; i < vertices.size() - 1; i++)
+	{
+		for (int j = 0; j < vertices[i].size() - 1; j++)
 		{
-			glPushMatrix();
-			glRotatef(j * 90, 0, 1, 0);
-			drawCylinderSegment();
-			glPopMatrix();
-		}
+			Point p1 = vertices[i][j];
+			Point p2 = vertices[(i + 1)][j];
+			Point p3 = vertices[i][(j + 1)];
+			Point p4 = vertices[(i + 1)][(j + 1)];
 
-		// 4 cylinder segments (parallel to XZ plane)
+			Triangle t1(p1, p3, p2);
+			Triangle t2(p2, p3, p4);
 
-		glRotatef(270, 1, 0, 0);
-		for (int j = 0; j < 4; j++)
-		{
-			glRotatef(j * 90, 0, 1, 0);
-			glPushMatrix();
-			drawCylinderSegment();
-			glPopMatrix();
+			glColor3f(1, 0, 0);
+			t1.draw();
+			glColor3f(0, 1, 0);
+			t2.draw();
 		}
-	glPopMatrix();
+	}
 }
 
 void keyboardListener(unsigned char key, int x, int y)
@@ -471,24 +353,32 @@ void keyboardListener(unsigned char key, int x, int y)
 		break;
 
 	case ',':
-		sphereRadius += 0.05;
-		// triangleLength -= 0.05;
-		if (sphereRadius > 1 / sqrt(2.0))
-			sphereRadius = 1 / sqrt(2.0);
-		// if (triangleLength < 0)
-		// 	triangleLength = 0;
+
 		break;
 
 	case '.':
 
-		sphereRadius -= 0.05;
-		// triangleLength += 0.05 ;
-		if (sphereRadius < 0)
-			sphereRadius = 0;
-		// if (triangleLength > 1 / sqrt(2.0))
-		// 	triangleLength = 1 / sqrt(2.0);
 		break;
 
+	case 'i':
+		ballPos.x += 0.1 * cos(ballRot);
+		ballPos.y += 0.1 * sin(ballRot);
+		break;
+
+	case 'k':
+		ballPos.x -= 0.1 * cos(ballRot);
+		ballPos.y -= 0.1 * sin(ballRot);
+		break;
+
+	case 'j':
+
+		ballRot += 1;
+		break;
+
+	case 'l':
+		printf("l pressed\n");
+		ballRot -= 1;
+		break;
 	default:
 		break;
 	}
@@ -573,6 +463,29 @@ void mouseListener(int button, int state, int x, int y)
 	}
 }
 
+// draw a thin pointy arrow
+void drawArrow()
+{
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	glPushMatrix();
+	{
+		glTranslatef(0, 0, 0.5);
+		glScalef(0.05, 0.05, 1);
+		glutSolidCube(0.9);
+	}
+	glPopMatrix();
+
+	glPushMatrix();
+	{
+		glTranslatef(0, 0, 1);
+		glutSolidCone(0.1, 0.4, 10, 10);
+	}
+	glPopMatrix();
+
+	glPopMatrix();
+}
+
 void display()
 {
 	// clear the display
@@ -594,15 +507,22 @@ void display()
 
 	// add objects
 	drawAxes();
-	// drawGrid();
+	drawChessBoard();
 
-	// draw triangle
+	glPushMatrix();
+	{
 
-	drawPyramid();
-
-	drawSphere();
-
-	drawAllSegmentsCylinder();
+		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
+		glRotatef(ballRot * 180.0 / pi, 0, 0, 1);
+		glPushMatrix();
+		{
+			// glTranslatef(cos(ballRot), sin(ballRot), 0);
+			drawArrow();
+		}
+		glPopMatrix();
+		drawSphere();
+	}
+	glPopMatrix();
 
 	// ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();

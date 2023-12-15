@@ -1,2 +1,2 @@
-g++ main.cpp -o demo -lglut -lGLU -lGL
+g++ task2.cpp -o demo -lglut -lGLU -lGL
 ./demo
