@@ -358,6 +358,20 @@ void keyboardListener(unsigned char key, int x, int y)
 		rollangle += 0.1;
 
 		// reflect the ball's direction if it hits the wall
+		if (ballPos.x > 2 || ballPos.x < -2)
+		{
+			ballRot = pi - ballRot;
+
+			ball_look = RodriGeneral(ball_look, ball_right,- pi);
+			ball_up = RodriGeneral(ball_up, ball_right, -pi);
+		}
+		if (ballPos.y > 2 || ballPos.y < -2)
+		{
+			ballRot = -ballRot;
+
+			ball_look = RodriGeneral(ball_look, ball_up, -pi);
+			ball_right = RodriGeneral(ball_right, ball_up, -pi);
+		}
 		
 				
 		break;
@@ -372,6 +386,22 @@ void keyboardListener(unsigned char key, int x, int y)
 		ball_look = ball_look + ballPos;
 
 		rollangle -= 0.1;
+
+		// reflect the ball's direction if it hits the wall
+		if (ballPos.x > 2 || ballPos.x < -2)
+		{
+			ballRot = pi - ballRot;
+
+			ball_look = RodriGeneral(ball_look, ball_right, pi);
+			ball_up = RodriGeneral(ball_up, ball_right, pi);
+		}
+		if (ballPos.y > 2 || ballPos.y < -2)
+		{
+			ballRot = -ballRot;
+
+			ball_look = RodriGeneral(ball_look, ball_up, -pi);
+			ball_right = RodriGeneral(ball_right, ball_up, -pi);
+		}
 
 		break;
 	}
