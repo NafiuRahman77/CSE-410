@@ -18,6 +18,8 @@ double CYLINDER_ANGLE = 70.5287794;
 
 double ballRot = 1;
 
+double angleRotate = 0;
+
 struct Point
 {
 	double x = 0, y = 0, z = 0;
@@ -130,7 +132,7 @@ void drawAxes()
 	}
 }
 
-int gridSize = 8; // Adjust the size of the grid as needed
+int gridSize = 50; // Adjust the size of the grid as needed
 float squareSize = 1.0f;
 // draw a 4 by 4 red bounding wall
 //  Draw a 4x4 red bounding box as a wall
@@ -410,6 +412,13 @@ void keyboardListener(unsigned char key, int x, int y)
 		u.z = u.z * cos(rotation_angle) + (u ^ l).z * sin(rotation_angle);
 
 		break;
+	
+	case 'w':
+		pos.z += 0.1;
+		break;
+	case 's':
+		pos.z -= 0.1;
+		break;
 
 	case ',':
 
@@ -688,6 +697,8 @@ void display()
 	}
 	glPopMatrix();
 
+	glColor3f(0,0,1);
+
 	// move arrow along the ball's direction
 	glPushMatrix();
 	{
@@ -697,7 +708,9 @@ void display()
 		drawArrow();
 	}
 	glPopMatrix();
-
+    
+	glColor3f(0,1,0);
+	
 	glPushMatrix();
 	{
 		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
