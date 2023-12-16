@@ -2,7 +2,6 @@
 
 #include <GL/glut.h>
 
-
 using namespace std;
 
 #define pi (2 * acos(0.0))
@@ -17,7 +16,7 @@ int rotate_angle = 2;
 double rotation_angle = pi * rotate_angle / 180;
 double CYLINDER_ANGLE = 70.5287794;
 
-double ballRot = 0;
+double ballRot = 1;
 
 struct Point
 {
@@ -106,8 +105,6 @@ public:
 	}
 };
 
-
-
 struct Point pos(3, 3, 5), u(0, 0, 1), r(-1 / sqrt(2.0), 1 / sqrt(2.0), 0), l(-1 / sqrt(2.0), -1 / sqrt(2.0), -2);
 struct Point ballPos(0, 0, 0);
 // perpendicular to ballPos
@@ -137,7 +134,7 @@ int gridSize = 8; // Adjust the size of the grid as needed
 float squareSize = 1.0f;
 // draw a 4 by 4 red bounding wall
 //  Draw a 4x4 red bounding box as a wall
-float boxSize = 4.0f * squareSize;
+float boxSize = 8.0f * squareSize;
 float boxHeight = 0.5f; // Adjust the height of the wall as needed
 
 float minX = -boxSize / 2.0f;
@@ -217,8 +214,8 @@ void drawChessBoard()
 	glEnd();
 }
 
-int sectorCount = 15;
-int stackCount = 15;
+int sectorCount = 16;
+int stackCount = 8;
 
 vector<vector<Point>> vertices(sectorCount + 1, vector<Point>(stackCount + 1));
 
@@ -245,21 +242,94 @@ void drawSphere()
 	}
 }
 
-double theta=0, radius=0;
-
+double theta = 0, radius = 0;
 
 Point ball_up(0, 0, 1);
-Point ball_right(0,1,0);
-Point ball_look(1,0,0);
+Point ball_right(0, 1, 0);
+Point ball_look(1, 0, 0);
 
-Point RodriGeneral(Point l, Point r, double angle)
+Point RodriguezRotate(Point l, Point r, double angle)
 {
 	Point k = l ^ r;
 	Point rotated = l * cos(angle) + k * sin(angle);
 	return rotated;
 }
 
-double rollangle =0;
+double rollangle = 0;
+
+int simulator = 0;
+int simId = 0;
+double simStartPosx = 0, simStartPosy = 0, simStartPosz = 0, simVel = 0;
+
+void simScheduler();
+
+void simulateBall(int a){
+	if(simulator == 0)
+		return;
+	ballPos.x += 0.1 * cos(ballRot);
+	ballPos.y += 0.1 * sin(ballRot);
+
+	ball_look = ball_look + ballPos;
+
+	rollangle += 0.5;
+
+	glutTimerFunc(30, simulateBall, 0);
+}
+
+void simFlipX(int id)
+{
+
+	if(id != simId || simulator == 0)
+		return;
+	// reflect the ball's direction if it hits the wall
+
+	ballRot = pi - ballRot;
+
+	ball_look = RodriguezRotate(ball_look, ball_right, -pi);
+	ball_up = RodriguezRotate(ball_up, ball_right, -pi);
+    
+	printf("ballRot: %lf\n", ballRot);
+	simScheduler();
+}
+
+void simFlipY(int id)
+{
+	if(id != simId || simulator == 0)
+		return;
+
+	ballRot = -ballRot;
+
+	ball_look = RodriguezRotate(ball_look, ball_up, -pi);
+	ball_right = RodriguezRotate(ball_right, ball_up, -pi);
+
+	simScheduler();
+}
+
+void simScheduler()
+{
+	simId++;
+	simStartPosx = ballPos.x;
+	simStartPosy = ballPos.y;
+	simStartPosz = ballPos.z;
+	simVel = 0.1;
+	double A = ballRot, d = simVel / 360 * 2 * pi * sphereRadius;
+	double dx = d * cos(A), dy = d * sin(A);
+
+	// check whether tx or ty is greater, ie time to hit  the boundary wall
+	double tx = (dx > 0) ? (4 - sphereRadius - simStartPosx) / dx : (-4 + sphereRadius - simStartPosx) / dx;
+	double ty = (dy > 0) ? (4 - sphereRadius - simStartPosy) / dy : (-4 + sphereRadius - simStartPosy) / dy;
+
+	cout << "tx: " << tx << " ty: " << ty << endl;
+
+	if (tx < ty)
+	{
+		glutTimerFunc( tx/5, simFlipX, simId);
+	}
+	else
+	{
+		glutTimerFunc( ty/5, simFlipY, simId);
+	}
+}
 
 void keyboardListener(unsigned char key, int x, int y)
 {
@@ -354,28 +424,27 @@ void keyboardListener(unsigned char key, int x, int y)
 	{
 		ballPos.x += 0.1 * cos(ballRot);
 		ballPos.y += 0.1 * sin(ballRot);
-		
+
 		ball_look = ball_look + ballPos;
 
-		rollangle += 0.1;
+		rollangle += 0.5;
 
 		// reflect the ball's direction if it hits the wall
-		if (ballPos.x > 2 || ballPos.x < -2)
+		if (ballPos.x > 4 - sphereRadius || ballPos.x < -4 + sphereRadius)
 		{
 			ballRot = pi - ballRot;
 
-			ball_look = RodriGeneral(ball_look, ball_right,- pi);
-			ball_up = RodriGeneral(ball_up, ball_right, -pi);
+			ball_look = RodriguezRotate(ball_look, ball_right, -pi);
+			ball_up = RodriguezRotate(ball_up, ball_right, -pi);
 		}
-		if (ballPos.y > 2 || ballPos.y < -2)
+		if (ballPos.y > 4 - sphereRadius || ballPos.y < -4 + sphereRadius)
 		{
 			ballRot = -ballRot;
 
-			ball_look = RodriGeneral(ball_look, ball_up, -pi);
-			ball_right = RodriGeneral(ball_right, ball_up, -pi);
+			ball_look = RodriguezRotate(ball_look, ball_up, -pi);
+			ball_right = RodriguezRotate(ball_right, ball_up, -pi);
 		}
-		
-				
+
 		break;
 	}
 
@@ -383,28 +452,28 @@ void keyboardListener(unsigned char key, int x, int y)
 	{
 		ballPos.x -= 0.1 * cos(ballRot);
 		ballPos.y -= 0.1 * sin(ballRot);
-        
 
 		ball_look = ball_look + ballPos;
 
-		rollangle -= 0.1;
+		rollangle -= 0.5;
 
 		// reflect the ball's direction if it hits the wall
-		if (ballPos.x > 2 || ballPos.x < -2)
+		if (ballPos.x > 4 - sphereRadius || ballPos.x < -4 + sphereRadius)
 		{
 			ballRot = pi - ballRot;
 
-			ball_look = RodriGeneral(ball_look, ball_right, pi);
-			ball_up = RodriGeneral(ball_up, ball_right, pi);
+			ball_look = RodriguezRotate(ball_look, ball_right, -pi);
+			ball_up = RodriguezRotate(ball_up, ball_right, -pi);
 		}
-		if (ballPos.y > 2 || ballPos.y < -2)
+		if (ballPos.y > 4 - sphereRadius || ballPos.y < -4 + sphereRadius)
 		{
 			ballRot = -ballRot;
 
-			ball_look = RodriGeneral(ball_look, ball_up, -pi);
-			ball_right = RodriGeneral(ball_right, ball_up, -pi);
+			ball_look = RodriguezRotate(ball_look, ball_up, pi);
+			ball_right = RodriguezRotate(ball_right, ball_up, pi);
 		}
 
+		
 		break;
 	}
 	case 'j':
@@ -413,24 +482,43 @@ void keyboardListener(unsigned char key, int x, int y)
 		// if (ballRot > 2 * pi)
 		// 	ballRot = 0;
 
-		ball_look = RodriGeneral(ball_look, ball_up, -1);
-		ball_right = RodriGeneral(ball_right, ball_up, -1);
+		ball_look = RodriguezRotate(ball_look, ball_up, -1);
+		ball_right = RodriguezRotate(ball_right, ball_up, -1);
+
+		if(simulator == 1){
+			simScheduler();
+		}
+
 
 		break;
 	}
 
 	case 'l':
 		printf("l pressed\n");
-	
 
 		ballRot -= 1;
 		// if (ballRot > 2 * pi)
 		// 	ballRot = 0;
 
-		ball_look = RodriGeneral(ball_look, ball_up, 1);
-		ball_right = RodriGeneral(ball_right, ball_up, 1);
+		ball_look = RodriguezRotate(ball_look, ball_up, 1);
+		ball_right = RodriguezRotate(ball_right, ball_up, 1);
+
+		if(simulator == 1){
+			simScheduler();
+		}
+
 
 		break;
+	//space bar	;
+	case 32:
+		printf("space pressed\n");
+		simulator = 1- simulator;
+		if(simulator == 1){
+			simulateBall(0);
+			simScheduler();
+		}
+		break;
+
 	default:
 		break;
 	}
@@ -482,6 +570,8 @@ void specialKeyListener(int key, int x, int y)
 			translate_value += 5;
 		}
 		break;
+	
+	
 
 	default:
 		break;
@@ -538,6 +628,35 @@ void drawArrow()
 	glPopMatrix();
 }
 
+priority_queue<double> pq;
+// event driven simulation
+
+void rollBall()
+{
+	ballPos.x += 0.1 * cos(ballRot);
+	ballPos.y += 0.1 * sin(ballRot);
+
+	ball_look = ball_look + ballPos;
+
+	rollangle += 0.5;
+
+	// reflect the ball's direction if it hits the wall
+	if (ballPos.x > 2 - sphereRadius || ballPos.x < -2 + sphereRadius)
+	{
+		ballRot = pi - ballRot;
+
+		ball_look = RodriguezRotate(ball_look, ball_right, -pi);
+		ball_up = RodriguezRotate(ball_up, ball_right, -pi);
+	}
+	if (ballPos.y > 2 - sphereRadius || ballPos.y < -2 + sphereRadius)
+	{
+		ballRot = -ballRot;
+
+		ball_look = RodriguezRotate(ball_look, ball_up, -pi);
+		ball_right = RodriguezRotate(ball_right, ball_up, -pi);
+	}
+}
+
 void display()
 {
 	// clear the display
@@ -573,7 +692,7 @@ void display()
 	glPushMatrix();
 	{
 		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
-		glRotatef(ballRot * 180 / pi, 0, 0, 1);	
+		glRotatef(ballRot * 180 / pi, 0, 0, 1);
 		glRotatef(90, 0, 1, 0);
 		drawArrow();
 	}
@@ -586,6 +705,7 @@ void display()
 	}
 	glPopMatrix();
 
+	// rollBall();
 	// ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
