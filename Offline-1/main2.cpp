@@ -1,572 +1,505 @@
-#include <iostream>
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+
 #include <GL/glut.h>
-#include <math.h>
-#include <vector>
 
-#define PI acos(-1.0)
-#define degToRad(x) (x * PI / 180.0)
+#define pi (2*acos(0.0))
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
+double cameraHeight;
+double cameraAngle;
+int drawgrid;
+int drawaxes;
+double angleTurn;
+double angleFwd;
 
-#define KEY_ESCAPE 27
-#define STEPS 16
-#define CYLINDER_ANGLE 70.5287794
+double wheelH = 5, wheelR = 15;
 
-
-typedef struct {
-    GLdouble x, y, z;
-} Point;
-
-// Global variables
-Point eyePos;   // pos
-Point lookDir;  // l
-Point rightDir; // r
-Point upDir;    // u
-Point center;
-
-const double OneByRoot2 = 1.0 / (sqrt(2));
-
-bool isAxes = true;
-bool isFillTriangle = true;
-bool isOctahedron = true;
-bool isSphere = true;
-bool isCylinder = true;
-
-bool colorToggle = false;
-
-// Vertices of front facing triangle
-Point vx;
-Point vy;
-Point vz;
-
-double sphereRadius;
-double objectRotationHorAngle;
-double objectRotationVerAngle;
-
-using namespace std;
-
-void initGL()
+struct PT
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black and opaque
-    glEnable(GL_DEPTH_TEST);              // Enable depth testing for z-culling
+	PT() {}
+	double x,y,z;
+
+	PT(double x, double y, double z) : x(x), y(y), z(z) {}
+    PT(const PT &p) : x(p.x), y(p.y), z(p.z) {}
+
+	// arithemtic operations
+	PT operator +(PT b)  {return PT(x+b.x,y+b.y, z+b.z);}
+    PT operator -(PT b)  {return PT(x-b.x,y-b.y, z-b.z);}
+	PT operator *(double b)  {return PT(x*b,y*b, z*b);}
+	PT operator /(double b)  {return PT(x/b,y/b, z/b);}
+	PT operator *(PT b)  {return PT(y*b.z-z*b.y, z*b.x-x*b.z, x*b.y-y*b.x);}
+};
+
+// position of wheel
+PT pos(0,0,0);
+
+void drawAxes()
+{
+	if(drawaxes==1)
+	{
+		glColor3f(1.0, 1.0, 1.0);
+		glBegin(GL_LINES);{
+			glVertex3f( 100,0,0);
+			glVertex3f(-100,0,0);
+
+			glVertex3f(0,-100,0);
+			glVertex3f(0, 100,0);
+
+			glVertex3f(0,0, 100);
+			glVertex3f(0,0,-100);
+		}glEnd();
+	}
 }
 
-// color functions
-void colorBlue() {glColor3f(0.0f, 0.0f, 1.0f);} // Blue
 
-void colorRed() {glColor3f(1.0f, 0.0f, 0.0f);} // Red
-
-void colorGreen() {glColor3f(0.0f, 1.0f, 0.0f);} // Green
-
-void colorCyan() {glColor3f(0.0f, 1.0f, 1.0f);} // Cyan
-
-void colorMagenta() {glColor3f(1.0f, 0.0f, 1.0f);} // Magenta
-
-void colorYellow() {glColor3f(1.0f, 1.0f, 0.0f);} // Yellow
-
-void point(Point A)
+void drawGrid()
 {
-    glVertex3f(A.x, A.y, A.z);
+	int i;
+	if(drawgrid==1)
+	{
+		glColor3f(0.6, 0.6, 0.6);	//grey
+		glBegin(GL_LINES);{
+			for(i=-8;i<=8;i++){
+
+				// if(i==0)
+				// 	continue;	//SKIP the MAIN axes
+
+				//lines parallel to Y-axis
+				glVertex3f(i*10, -90, 0);
+				glVertex3f(i*10,  90, 0);
+
+				//lines parallel to X-axis
+				glVertex3f(-90, i*10, 0);
+				glVertex3f( 90, i*10, 0);
+			}
+		}glEnd();
+	}
 }
 
-void drawTriangle()
+void drawSquare(double a)
 {
-    glPushMatrix();
-        double scaleFactor = 1 - sqrt(2) * sphereRadius;
-        double translateFactor = 1/sqrt(3) * sphereRadius;
-        glTranslatef(translateFactor, translateFactor, translateFactor);
-        // glTranslatef(sphereRadius/sqrt(3), sphereRadius/sqrt(3), sphereRadius/sqrt(3));
-        glScalef(scaleFactor, scaleFactor, scaleFactor);
-        if (isFillTriangle) glBegin(GL_TRIANGLES);
-        else glBegin(GL_LINE_LOOP);
-        point(vx);
-        point(vy);
-        point(vz);
-        glEnd();
-    glPopMatrix();
+    //glColor3f(1.0,0.0,0.0);
+	glBegin(GL_QUADS);{
+		glVertex3f( a, a,0);
+		glVertex3f( a,-a,0);
+		glVertex3f(-a,-a,0);
+		glVertex3f(-a, a,0);
+	}glEnd();
 }
 
-// https://www.songho.ca/opengl/gl_sphere.html
-vector<vector<Point>> buildUnitPositiveX(int subdivision)
+void drawRectangle(double w,double h)
 {
-    const float DEG2RAD = acos(-1) / 180.0f;
-
-    // compute the number of vertices per row, 2^n + 1
-    int pointsPerRow = (int)pow(2, subdivision) + 1;
-    vector<vector<Point>> vertices(pointsPerRow);
-    float n1[3];        // normal of longitudinal plane rotating along Y-axis
-    float n2[3];        // normal of latitudinal plane rotating along Z-axis
-    float v[3];         // direction vector intersecting 2 planes, n1 x n2
-    float a1;           // longitudinal angle along Y-axis
-    float a2;           // latitudinal angle along Z-axis
+    //glColor3f(1.0,0.0,0.0);
+	glBegin(GL_QUADS);{
+		glVertex3f( w, h,0);
+		glVertex3f( w,-h,0);
+		glVertex3f(-w,-h,0);
+		glVertex3f(-w, h,0);
+	}glEnd();
+}
 
 
-    // rotate latitudinal plane from 45 to -45 degrees along Z-axis (top-to-bottom)
-    for(unsigned int i = 0; i < pointsPerRow; ++i)
+void drawCircle(double radius,int segments)
+{
+    int i;
+    struct PT points[100];
+    glColor3f(0.7,0.7,0.7);
+    //generate points
+    for(i=0;i<=segments;i++)
     {
-        // normal for latitudinal plane
-        // if latitude angle is 0, then normal vector of latitude plane is n2=(0,1,0)
-        // therefore, it is rotating (0,1,0) vector by latitude angle a2
-        a2 = DEG2RAD * (45.0f - 90.0f * i / (pointsPerRow - 1));
-        n2[0] = -sin(a2);
-        n2[1] = cos(a2);
-        n2[2] = 0;
-
-        // rotate longitudinal plane from -45 to 45 along Y-axis (left-to-right)
-        for(unsigned int j = 0; j < pointsPerRow; ++j)
+        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
+        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
+    }
+    //draw segments using generated points
+    for(i=0;i<segments;i++)
+    {
+        glBegin(GL_LINES);
         {
-            // normal for longitudinal plane
-            // if longitude angle is 0, then normal vector of longitude is n1=(0,0,-1)
-            // therefore, it is rotating (0,0,-1) vector by longitude angle a1
-            a1 = DEG2RAD * (-45.0f + 90.0f * j / (pointsPerRow - 1));
-            n1[0] = -sin(a1);
-            n1[1] = 0;
-            n1[2] = -cos(a1);
-
-            // find direction vector of intersected line, n1 x n2
-            v[0] = n1[1] * n2[2] - n1[2] * n2[1];
-            v[1] = n1[2] * n2[0] - n1[0] * n2[2];
-            v[2] = n1[0] * n2[1] - n1[1] * n2[0];
-
-            // normalize direction vector
-            float scale = 1 / sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-            v[0] *= scale;
-            v[1] *= scale;
-            v[2] *= scale;
-
-            // add a vertex into array
-            vertices[i].push_back({v[0], v[1], v[2]});
+			glVertex3f(points[i].x,points[i].y,0);
+			glVertex3f(points[i+1].x,points[i+1].y,0);
         }
+        glEnd();
     }
-
-    return vertices;
 }
 
-void drawSphereSegment()
+void drawCone(double radius,double height,int segments)
 {
-    vector<vector<Point>> vertices = buildUnitPositiveX(3);
-    int pointsPerRow = (int)pow(2, 3) + 1;
-    int index = 0;
-    glScalef(sphereRadius, sphereRadius, sphereRadius); 
-    for (int i = 0; i < pointsPerRow - 1; i++)
+    int i;
+    double shade;
+    struct PT points[100];
+    //generate points
+    for(i=0;i<=segments;i++)
     {
-        glBegin(GL_QUADS);
-        for (int j = 0; j < pointsPerRow - 1; j++)
+        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
+        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
+    }
+    //draw triangles using generated points
+    for(i=0;i<segments;i++)
+    {
+        //create shading effect
+        if(i<segments/2)shade=2*(double)i/(double)segments;
+        else shade=2*(1.0-(double)i/(double)segments);
+        glColor3f(shade,shade,shade);
+
+        glBegin(GL_TRIANGLES);
         {
-            point(vertices[i][j]); 
-            point(vertices[i][j + 1]);
-            point(vertices[i + 1][j + 1]);
-            point(vertices[i + 1][j]);
+            glVertex3f(0,0,height);
+			glVertex3f(points[i].x,points[i].y,0);
+			glVertex3f(points[i+1].x,points[i+1].y,0);
         }
         glEnd();
     }
 }
 
-void drawAllSegmentsSphere(){
-    double dist = 1 - sqrt(2) * sphereRadius;
-    double translateFactor[4][3] = {{dist, 0, 0}, {0, 0, -dist}, {-dist, 0, 0}, {0, 0, dist}};
 
-    for (int i = 0; i < 4; i++) {
-        if (i%2 == 0) colorRed();
-        else colorBlue();
-        glPushMatrix();
-            glTranslatef(translateFactor[i][0], translateFactor[i][1], translateFactor[i][2]);
-            glRotatef(i * 90, 0, 1, 0);
-            drawSphereSegment();
-        glPopMatrix();
-    }
-
-    colorGreen();  
-
-    glPushMatrix();
-        glTranslatef(0, dist, 0);
-        glRotatef(90, 0, 0, 1);
-        drawSphereSegment();
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslatef(0, -dist, 0);
-        glRotatef(-90, 0, 0, 1);
-        drawSphereSegment();
-    glPopMatrix();
-
+void drawSphere(double radius,int slices,int stacks)
+{
+	struct PT points[100][100];
+	int i,j;
+	double h,r;
+	//generate points
+	for(i=0;i<=stacks;i++)
+	{
+		h=radius*sin(((double)i/(double)stacks)*(pi/2));
+		r=radius*cos(((double)i/(double)stacks)*(pi/2));
+		for(j=0;j<=slices;j++)
+		{
+			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
+			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
+			points[i][j].z=h;
+		}
+	}
+	//draw quads using generated points
+	for(i=0;i<stacks;i++)
+	{
+        glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+		for(j=0;j<slices;j++)
+		{
+			glBegin(GL_QUADS);{
+			    //upper hemisphere
+				glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+				glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+                //lower hemisphere
+                glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
+				glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
+				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
+				glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
+			}glEnd();
+		}
+	}
 }
 
-void drawPyramid()
+void drawCylinder(double radius,double height,int segments)
 {
-    for (int i = 0; i < 4; i++)
+	struct PT points[100];
+	int i;
+	double shade;
+
+	// glRotatef(angle,0,0,1);
+	
+
+	//generate points
+	for(i=0;i<=segments;i++)
+	{
+		points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
+		points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
+	}
+	//draw quads using generated points
+	for(i=0;i<segments;i++)
+	{
+		//create shading effect
+		if(i<segments/2)shade=2*(double)i/(double)segments;
+		else shade=2*(1.0-(double)i/(double)segments);
+		
+		glColor3f(shade,shade,shade);
+
+		glBegin(GL_QUADS);{
+			glVertex3f(points[i].x,points[i].y,0);
+			glVertex3f(points[i].x,points[i].y,height);
+			glVertex3f(points[i+1].x,points[i+1].y,height);
+			glVertex3f(points[i+1].x,points[i+1].y,0);
+		}glEnd();
+	}
+}
+
+
+void drawSS()
+{
+    glColor3f(1,0,0);
+    drawSquare(20);
+
+    glRotatef(angleTurn,0,0,1);
+    glTranslatef(110,0,0);
+    glRotatef(2*angleTurn,0,0,1);
+    glColor3f(0,1,0);
+    drawSquare(15);
+
+    glPushMatrix();
     {
-        glPushMatrix();
-            if (colorToggle) colorCyan();
-            else colorMagenta();
-            glRotatef(i * 90, 0, 1, 0);
-            drawTriangle();
-        glPopMatrix();
-        colorToggle = !colorToggle;
+        glRotatef(angleTurn,0,0,1);
+        glTranslatef(60,0,0);
+        glRotatef(2*angleTurn,0,0,1);
+        glColor3f(0,0,1);
+        drawSquare(10);
     }
-}
-
-void drawOctahedron()
-{
-    drawPyramid();
-    glPushMatrix();
-        glRotatef(180, 1, 0, 0);
-        drawPyramid();
     glPopMatrix();
+
+    glRotatef(3*angleTurn,0,0,1);
+    glTranslatef(40,0,0);
+    glRotatef(4*angleTurn,0,0,1);
+    glColor3f(1,1,0);
+    drawSquare(5);
 }
 
-void drawCylinderSegment(float angle, float radius, float height) {
-    const int numSegments = 100;
-    const float segmentAngle = angle * 3.1415f / 180.0f;
+double distanceTrav;
 
-    glPushMatrix();
-        glTranslatef(0.0f, -height/2, 0.0f);
-        glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
-        glBegin(GL_TRIANGLE_STRIP);
-        for (int i = 0; i <= numSegments; ++i) {
-            float theta = i * segmentAngle / numSegments;
-
-            float x = radius*cos(theta);
-            float z = radius*sin(theta);
-
-            glVertex3f(x, 0.0f, z);
-            glVertex3f(x, height*1.0f, z);
-        }
-        glEnd();
-    glPopMatrix();
-}
-
-void drawAllSegmentsCylinder(){
-    double radius = sphereRadius; 
-    double height = sqrt(2) - 2*radius;
-    double t = (1 - sqrt(2) * radius)/2;
-
-    colorYellow();
-    
-    // 8 cylinder segments (parralel to XY and YZ plane)
-    for (int i = 0; i < 2; i++) {
-        glPushMatrix();
-            glRotatef(i * 180, 1, 0, 0);
-            for (int j = 0; j < 4; j++) {
-                glPushMatrix();
-                    glRotatef(j * 90, 0, 1, 0);
-                    glPushMatrix();
-                        glTranslatef(t, t, 0);
-                        glRotatef(45, 0, 0, 1);
-                        drawCylinderSegment(CYLINDER_ANGLE, radius, height);
-                    glPopMatrix();
-                glPopMatrix();
-            }
-        glPopMatrix();
-    }   
-    
-    // 4 cylinder segments (parallel to XZ plane)
-    for (int j = 0; j < 4; j++) {
-        glPushMatrix();
-            glRotatef(j * 90, 0, 1, 0);
-            glPushMatrix();
-                glRotatef(90, 1, 0, 0);
-                glPushMatrix();
-                    glTranslatef(t, t, 0);
-                    glRotatef(45, 0, 0, 1);
-                    drawCylinderSegment(CYLINDER_ANGLE, radius, height);
-                glPopMatrix();
-            glPopMatrix();
-        glPopMatrix();
-    }
-
-}
-
-void drawAxes(int length)
+void moveForward()
 {
-    glLineWidth(3);
-    glBegin(GL_LINES);
-    glColor3f(1, 0, 0); // Red
-    // X axis
-    glVertex3f(0, 0, 0);
-    glVertex3f(length, 0, 0);
-
-    glColor3f(0, 1, 0); // Green
-    // Y axis
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, length, 0);
-
-    glColor3f(0, 0, 1); // Blue
-    // Z axis
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, 0, length);
-    glEnd();
+	angleFwd += 2;
+	distanceTrav = 2 * pi * wheelR * (double)(2)/(double)(360);
+	pos.x -= cos(angleTurn*pi/(double)180) * distanceTrav;
+	pos.y -= sin(angleTurn*pi/(double)180) * distanceTrav;
 }
 
-void resetScene(){
-    // Set up the camera
-    eyePos = {2, 2, 2};     // pos
-    lookDir = {-2, -2, -2}; // l
-    upDir = {0, 1, 0};      // u
-    rightDir = {upDir.z * (lookDir.y - eyePos.y) - upDir.y * (lookDir.z - eyePos.z), 
-                upDir.x * (lookDir.z - eyePos.z) - upDir.z * (lookDir.x - eyePos.x), 
-                upDir.y * (lookDir.x - eyePos.x) - upDir.x * (lookDir.y - eyePos.y)}; // r, cross product of l and u
-
-    // Initial vertices of triangle
-    vx = {1, 0, 0};
-    vy = {0, 1, 0};
-    vz = {0, 0, 1};
-
-    // Initial sphere radius (starts from zero)
-    sphereRadius = 0;
-    // Initial object rotation angle (no rotation without input)
-    objectRotationHorAngle = 0;
-    objectRotationVerAngle = 0;
-}
-
-
-
-//! display()
-void display()
+void moveBackward()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW); // To operate on Model-View matrix
-    glLoadIdentity();           // Reset the model-view matrix
-
-    // default arguments of gluLookAt
-    // gluLookAt(0,0,0, 0,0,-100, 0,1,0);
-
-    center = {eyePos.x + lookDir.x, eyePos.y + lookDir.y, eyePos.z + lookDir.z};
-    rightDir = {upDir.z * (lookDir.y - eyePos.y) - upDir.y * (lookDir.z - eyePos.z), 
-                upDir.x * (lookDir.z - eyePos.z) - upDir.z * (lookDir.x - eyePos.x), 
-                upDir.y * (lookDir.x - eyePos.x) - upDir.x * (lookDir.y - eyePos.y)};
-    // control viewing (or camera)
-    gluLookAt(eyePos.x, eyePos.y, eyePos.z,
-              center.x, center.y, center.z,
-              upDir.x, upDir.y, upDir.z);
-    // draw
-    glPushMatrix();
-        // glRotatef(objectRotationHorAngle, upDir.x, upDir.y, upDir.z);
-        glRotatef(objectRotationHorAngle, 0, 1, 0);
-        // glRotatef(objectRotationVerAngle, rightDir.x, rightDir.y, rightDir.z);
-        glPushMatrix();
-            // glRotatef(objectRotationVerAngle, 1, 0, -1);
-            if (isAxes)         drawAxes(2);
-            // if (isOctahedron)   drawOctahedron();
-            // if (isSphere)       drawAllSegmentsSphere();
-            if (isCylinder)     drawAllSegmentsCylinder();
-        // glPopMatrix();
-    glPopMatrix();
-    glutSwapBuffers(); // Render now
+	angleFwd -= 2;
+	distanceTrav = 2 * pi * wheelR * (double)(-2)/(double)(360);
+	pos.x -= cos(angleTurn*pi/(double)180) * distanceTrav;
+	pos.y -= sin(angleTurn*pi/(double)180) * distanceTrav;
 }
 
-/* Callback handler for normal-key event */
-void keyboardListener(unsigned char key, int xx, int yy)
-{
-    double rateDeg = 5;
-    double rate = degToRad(rateDeg);
-    double s, v = 0.01;
-    switch (key){
+void keyboardListener(unsigned char key, int x,int y){
+	switch(key){
 
-    case '1': // look left
-        rightDir.x = rightDir.x * cos(rate) + lookDir.x * sin(rate);
-        rightDir.y = rightDir.y * cos(rate) + lookDir.y * sin(rate);
-        rightDir.z = rightDir.z * cos(rate) + lookDir.z * sin(rate);
+		case '1':
+			drawgrid=1-drawgrid;
+			break;
 
-        lookDir.x = lookDir.x * cos(rate) - rightDir.x * sin(rate);
-        lookDir.y = lookDir.y * cos(rate) - rightDir.y * sin(rate);
-        lookDir.z = lookDir.z * cos(rate) - rightDir.z * sin(rate);
-        break;
-
-    case '2': // look right
-        rightDir.x = rightDir.x * cos(-rate) + lookDir.x * sin(-rate);
-        rightDir.y = rightDir.y * cos(-rate) + lookDir.y * sin(-rate);
-        rightDir.z = rightDir.z * cos(-rate) + lookDir.z * sin(-rate);
-
-        lookDir.x = lookDir.x * cos(-rate) - rightDir.x * sin(-rate);
-        lookDir.y = lookDir.y * cos(-rate) - rightDir.y * sin(-rate);
-        lookDir.z = lookDir.z * cos(-rate) - rightDir.z * sin(-rate);
-        break;
-
-    case '3': // look up
-        lookDir.x = lookDir.x * cos(rate) + upDir.x * sin(rate);
-        lookDir.y = lookDir.y * cos(rate) + upDir.y * sin(rate);
-        lookDir.z = lookDir.z * cos(rate) + upDir.z * sin(rate);
-
-        upDir.x = upDir.x * cos(rate) - lookDir.x * sin(rate);
-        upDir.y = upDir.y * cos(rate) - lookDir.y * sin(rate);
-        upDir.z = upDir.z * cos(rate) - lookDir.z * sin(rate);
-        break;
-
-    case '4': // look down
-        lookDir.x = lookDir.x * cos(-rate) + upDir.x * sin(-rate);
-        lookDir.y = lookDir.y * cos(-rate) + upDir.y * sin(-rate);
-        lookDir.z = lookDir.z * cos(-rate) + upDir.z * sin(-rate);
-
-        upDir.x = upDir.x * cos(-rate) - lookDir.x * sin(-rate);
-        upDir.y = upDir.y * cos(-rate) - lookDir.y * sin(-rate);
-        upDir.z = upDir.z * cos(-rate) - lookDir.z * sin(-rate);
-        break;
-
-    case '5': // tilt counter-clockwise
-        upDir.x = upDir.x * cos(rate) + rightDir.x * sin(rate);
-        upDir.y = upDir.y * cos(rate) + rightDir.y * sin(rate);
-        upDir.z = upDir.z * cos(rate) + rightDir.z * sin(rate);
-
-        rightDir.x = rightDir.x * cos(rate) - upDir.x * sin(rate);
-        rightDir.y = rightDir.y * cos(rate) - upDir.y * sin(rate);
-        rightDir.z = rightDir.z * cos(rate) - upDir.z * sin(rate);
-        break;
-
-    case '6': // tilt clockwise
-        upDir.x = upDir.x * cos(-rate) + rightDir.x * sin(-rate);
-        upDir.y = upDir.y * cos(-rate) + rightDir.y * sin(-rate);
-        upDir.z = upDir.z * cos(-rate) + rightDir.z * sin(-rate);
-
-        rightDir.x = rightDir.x * cos(-rate) - upDir.x * sin(-rate);
-        rightDir.y = rightDir.y * cos(-rate) - upDir.y * sin(-rate);
-        rightDir.z = rightDir.z * cos(-rate) - upDir.z * sin(-rate);
-        break;
-
-    case 'a':
-        objectRotationHorAngle += rateDeg;
-        break;
-
-    case 'd':
-        objectRotationHorAngle -= rateDeg;
-        break;
-
-    case 'w':
-        objectRotationVerAngle += rateDeg;
-        break;
-
-    case 's':
-        objectRotationVerAngle -= rateDeg;
-        break;
-
-    case 'r':
-        resetScene();
-        break;
-
-    case 'f':
-        isFillTriangle = !isFillTriangle;
-        break;
-
-    case 'g':
-        isOctahedron = !isOctahedron;
-        break;
-    
-    case 'h':
-        isSphere = !isSphere;
-        break;
-    
-    case 'j':
-        isCylinder = !isCylinder;
-        break;
-    
-    case 'x':
-        isAxes = !isAxes;
-        break;
-
-    case ',': 
-        sphereRadius += OneByRoot2/16.0;
-        if(sphereRadius > OneByRoot2) sphereRadius = OneByRoot2;
-        break;
-    
-    case '.': 
-        sphereRadius -= OneByRoot2/16.0;
-        if(sphereRadius < 0) sphereRadius = 0;
-        break; 
-
-    default:
-        return;
-    }
-
-    glutPostRedisplay();
+		case 'w':
+			// pos.x -= 3;
+			moveForward();
+			break;
+		case 's':
+			moveBackward();
+			break;
+		case 'a':
+			angleTurn += 1.5;
+			break;
+		case 'd':
+			angleTurn -= 1.5;
+		default:
+			break;
+	}
 }
 
-/* Callback handler for special-key event */
-void specialKeyListener(int key, int x, int y)
-{
-    double rate = 0.01;
-    switch (key){
 
-    case GLUT_KEY_UP: 
-        eyePos.x += lookDir.x * rate;
-        eyePos.y += lookDir.y * rate;
-        eyePos.z += lookDir.z * rate;
-        break;
-    case GLUT_KEY_DOWN: 
-        eyePos.x -= lookDir.x * rate;
-        eyePos.y -= lookDir.y * rate;
-        eyePos.z -= lookDir.z * rate;
-        break;
+void specialKeyListener(int key, int x,int y){
+	switch(key){
+		case GLUT_KEY_DOWN:		//down arrow key
+			cameraHeight -= 3.0;
+			break;
+		case GLUT_KEY_UP:		// up arrow key
+			cameraHeight += 3.0;
+			break;
 
-    case GLUT_KEY_RIGHT:
-        eyePos.x += rightDir.x * rate;
-        eyePos.y += rightDir.y * rate;
-        eyePos.z += rightDir.z * rate;
-        break;
-    case GLUT_KEY_LEFT:
-        eyePos.x -= rightDir.x * rate;
-        eyePos.y -= rightDir.y * rate;
-        eyePos.z -= rightDir.z * rate;
-        break;
+		case GLUT_KEY_RIGHT:
+			cameraAngle += 0.03;
+			break;
+		case GLUT_KEY_LEFT:
+			cameraAngle -= 0.03;
+			break;
 
-    case GLUT_KEY_PAGE_UP:
-        eyePos.x += upDir.x * rate;
-        eyePos.y += upDir.y * rate;
-        eyePos.z += upDir.z * rate;
-        break;
-    case GLUT_KEY_PAGE_DOWN:
-        eyePos.x -= upDir.x * rate;
-        eyePos.y -= upDir.y * rate;
-        eyePos.z -= upDir.z * rate;
-        break;
+		case GLUT_KEY_PAGE_UP:
+			break;
+		case GLUT_KEY_PAGE_DOWN:
+			break;
 
-    default:
-        return;
-    }
-    glutPostRedisplay();
+		case GLUT_KEY_INSERT:
+			break;
+
+		case GLUT_KEY_HOME:
+			break;
+		case GLUT_KEY_END:
+			break;
+
+		default:
+			break;
+	}
 }
 
-/* Handler for window re-size event. Called back when the window first appears and
-   whenever the window is re-sized with its new width and height */
-void reshapeListener(GLsizei width, GLsizei height)
-{ // GLsizei for non-negative integer
-    // Compute aspect ratio of the new window
-    if (height == 0)
-        height = 1; // To prevent divide by 0
-    GLfloat aspect = (GLfloat)width / (GLfloat)height;
 
-    // Set the viewport to cover the new window
-    glViewport(0, 0, width, height);
+void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of the screen (2D)
+	switch(button){
+		case GLUT_LEFT_BUTTON:
+			if(state == GLUT_DOWN){		// 2 times?? in ONE click? -- solution is checking DOWN or UP
+				drawaxes=1-drawaxes;
+			}
+			break;
 
-    // Set the aspect ratio of the clipping area to match the viewport
-    glMatrixMode(GL_PROJECTION); // To operate on the Projection matrix
-    glLoadIdentity();            // Reset the projection matrix
-    /*if (width >= height) {
-        // aspect >= 1, set the height from -1 to 1, with larger width
-        gluOrtho2D(-1.0 * aspect, 1.0 * aspect, -1.0, 1.0);
-    } else {
-        // aspect < 1, set the width to -1 to 1, with larger height
-        gluOrtho2D(-1.0, 1.0, -1.0 / aspect, 1.0 / aspect);
-    }*/
-    // Enable perspective projection with fovy, aspect, zNear and zFar
-    gluPerspective(45.0f, aspect, 0.1f, 100.0f);
+		case GLUT_RIGHT_BUTTON:
+			//........
+			break;
+
+		case GLUT_MIDDLE_BUTTON:
+			//........
+			break;
+
+		default:
+			break;
+	}
 }
 
-int main(int argc, char **argv)
-{
-    resetScene(); // initial position
 
-    glutInit(&argc, argv);
-    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    glutInitWindowPosition(1000, 100);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
-    glutCreateWindow("It's Cubin' Time");
-    glutDisplayFunc(display); // Register display callback handler for window re-paint
-    // glutIdleFunc(idle);                         // Register idle callback handler for window re-paint
-    glutReshapeFunc(reshapeListener);    // Register callback handler for window re-shape
-    glutKeyboardFunc(keyboardListener);  // Register callback handler for normal-key event
-    glutSpecialFunc(specialKeyListener); // Register callback handler for special-key event
-    initGL();
-    glutMainLoop();
-    return 0;
+
+
+
+void display(){
+
+	//clear the display
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0,0,0,0);	//color black
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	/********************
+	/ set-up camera here
+	********************/
+	//load the correct matrix -- MODEL-VIEW matrix
+	glMatrixMode(GL_MODELVIEW);
+
+	//initialize the matrix
+	glLoadIdentity();
+
+	//now give three info
+	//1. where is the camera (viewer)?
+	//2. where is the camera looking?
+	//3. Which direction is the camera's UP direction?
+
+	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
+	double cameraDistance = 100;
+	gluLookAt(cameraDistance*cos(cameraAngle), cameraDistance*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
+	// gluLookAt(0,0,200,	0,0,0,	0,1,0);
+
+
+	//again select MODEL-VIEW
+	glMatrixMode(GL_MODELVIEW);
+
+
+	/****************************
+	/ Add your objects from here
+	****************************/
+	//add objects
+
+	drawAxes();
+	drawGrid();
+
+    //glColor3f(1,0,0);
+    //drawSquare(10);
+
+    // drawSS();
+
+    //drawCircle(30,24);
+
+    // drawCone(20,50,24);
+
+	//drawSphere(30,24,20);
+
+	glTranslatef(0,0,wheelR);
+	glTranslatef(pos.x,pos.y,pos.z);
+	glRotatef(90,1,0,0);
+
+	glRotatef(angleTurn,0,1,0);	
+	glRotatef(angleFwd,0,0,1);
+
+	glPushMatrix();
+	{
+
+		
+		drawCylinder(wheelR,wheelH/2,40);
+		glTranslatef(0,0,-wheelH/2);
+		drawCylinder(wheelR,wheelH/2,40);
+		glTranslatef(0,0,wheelH/2);
+		// rectangles inside wheel
+		glColor3f(1,1,1);
+		// // drawSquare(30);
+		// glTranslatef(0,0,5);
+		glRotatef(90,0,1,0);
+		drawRectangle(wheelH/2,wheelR);
+
+		glRotatef(90,1,0,0);
+		drawRectangle(wheelH/2,wheelR);
+	}
+	glPopMatrix();
+
+	
+	// glTranslatef(pos.x,pos.y,pos.z);
+
+
+
+
+	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
+	glutSwapBuffers();
+}
+
+
+void animate(){
+	// angle+=0.05;
+	//codes for any changes in Models, Camera
+	glutPostRedisplay();
+}
+
+void init(){
+	//codes for initialization
+	drawgrid=1;
+	drawaxes=0;
+	cameraHeight=100.0;
+	cameraAngle=1.0;
+	angleTurn=0;
+	angleFwd=0;
+
+	//clear the screen
+	glClearColor(0,0,0,0);
+
+	/************************
+	/ set-up projection here
+	************************/
+	//load the PROJECTION matrix
+	glMatrixMode(GL_PROJECTION);
+
+	//initialize the matrix
+	glLoadIdentity();
+
+	//give PERSPECTIVE parameters
+	gluPerspective(60,	1,	1,	1000.0);
+	//field of view in the Y (vertically)
+	//aspect ratio that determines the field of view in the X direction (horizontally)
+	//near distance
+	//far distance
+}
+
+int main(int argc, char **argv){
+	glutInit(&argc,argv);
+	glutInitWindowSize(500, 500);
+	glutInitWindowPosition(0, 0);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
+
+	glutCreateWindow("My OpenGL Program");
+
+	init();
+
+	glEnable(GL_DEPTH_TEST);	//enable Depth Testing
+
+	glutDisplayFunc(display);	//display callback function
+	glutIdleFunc(animate);		//what you want to do in the idle time (when no drawing is occuring)
+
+	glutKeyboardFunc(keyboardListener);
+	glutSpecialFunc(specialKeyListener);
+	glutMouseFunc(mouseListener);
+
+	glutMainLoop();		//The main loop of OpenGL
+
+	return 0;
 }

@@ -2,6 +2,7 @@
 
 #include <GL/glut.h>
 
+
 using namespace std;
 
 #define pi (2 * acos(0.0))
@@ -106,7 +107,9 @@ public:
 };
 
 struct Point pos(3, 3, 5), u(0, 0, 1), r(-1 / sqrt(2.0), 1 / sqrt(2.0), 0), l(-1 / sqrt(2.0), -1 / sqrt(2.0), -2);
-struct Point ballPos(0, 0, sphereRadius / 2.0);
+struct Point ballPos(0, 0, 0);
+// perpendicular to ballPos
+struct Point ballPerp(0, 0, 0);
 
 void drawAxes()
 {
@@ -127,10 +130,24 @@ void drawAxes()
 		glEnd();
 	}
 }
+
+int gridSize = 8; // Adjust the size of the grid as needed
+float squareSize = 1.0f;
+// draw a 4 by 4 red bounding wall
+//  Draw a 4x4 red bounding box as a wall
+float boxSize = 4.0f * squareSize;
+float boxHeight = 0.5f; // Adjust the height of the wall as needed
+
+float minX = -boxSize / 2.0f;
+float maxX = boxSize / 2.0f;
+float minY = -boxSize / 2.0f;
+float maxY = boxSize / 2.0f;
+
+float minZ = 0.0f;
+float maxZ = boxHeight;
+
 void drawChessBoard()
 {
-	int gridSize = 8; // Adjust the size of the grid as needed
-	float squareSize = 1.0f;
 
 	for (int i = -gridSize; i < gridSize; ++i)
 	{
@@ -154,19 +171,6 @@ void drawChessBoard()
 			glEnd();
 		}
 	}
-
-	// draw a 4 by 4 red bounding wall
-	//  Draw a 4x4 red bounding box as a wall
-	float boxSize = 4.0f * squareSize;
-	float boxHeight = 0.5f; // Adjust the height of the wall as needed
-
-	float minX = -boxSize / 2.0f;
-	float maxX = boxSize / 2.0f;
-	float minY = -boxSize / 2.0f;
-	float maxY = boxSize / 2.0f;
-
-	float minZ = 0.0f;
-	float maxZ = boxHeight;
 
 	glColor3f(1.0, 0.0, 0.0); // Red color
 
@@ -219,39 +223,6 @@ vector<vector<Point>> vertices(sectorCount + 1, vector<Point>(stackCount + 1));
 void drawSphere()
 {
 
-	float sectorStep = 2 * pi / sectorCount;
-	float stackStep = pi / stackCount;
-
-	float sectorAngle, stackAngle;
-
-	for (int i = 0; i <= sectorCount; i++)
-	{
-		sectorAngle = i * sectorStep;
-		for (int j = 0; j <= stackCount; j++)
-		{
-			double theta1 = sectorStep * i;
-			// double theta2 = sectorStep * (i + 1);
-			double phi1 = pi / 2.0 - stackStep * j;
-			// double phi2 = pi / 2.0 - stackStep * (j + 1);
-
-			Point p(sphereRadius * cos(phi1) * cos(theta1), sphereRadius * cos(phi1) * sin(theta1), sphereRadius * sin(phi1));
-
-			vertices[i].push_back(p);
-			// Point p2(sphereRadius * cos(phi1) * cos(theta2), sphereRadius * cos(phi1) * sin(theta2), sphereRadius * sin(phi1));
-			// Point p3(sphereRadius * cos(phi2) * cos(theta1), sphereRadius * cos(phi2) * sin(theta1), sphereRadius * sin(phi2));
-			// Point p4(sphereRadius * cos(phi2) * cos(theta2), sphereRadius * cos(phi2) * sin(theta2), sphereRadius * sin(phi2));
-
-			// Triangle t1(p1, p3, p2);
-
-			// Triangle t2(p2, p3, p4);
-
-			// glColor3f(1, 0, 0);
-			// t1.draw();
-			// glColor3f(0, 1, 0);
-			// t2.draw();
-		}
-	}
-
 	for (int i = 0; i < vertices.size() - 1; i++)
 	{
 		for (int j = 0; j < vertices[i].size() - 1; j++)
@@ -271,6 +242,22 @@ void drawSphere()
 		}
 	}
 }
+
+double theta=0, radius=0;
+
+
+Point ball_up(0, 0, 1);
+Point ball_right(0,1,0);
+Point ball_look(1,0,0);
+
+Point RodriGeneral(Point l, Point r, double angle)
+{
+	Point k = l ^ r;
+	Point rotated = l * cos(angle) + k * sin(angle);
+	return rotated;
+}
+
+double rollangle =0;
 
 void keyboardListener(unsigned char key, int x, int y)
 {
@@ -361,23 +348,56 @@ void keyboardListener(unsigned char key, int x, int y)
 		break;
 
 	case 'i':
+
+	{
 		ballPos.x += 0.1 * cos(ballRot);
 		ballPos.y += 0.1 * sin(ballRot);
+		
+		ball_look = ball_look + ballPos;
+
+		rollangle += 0.1;
+
+		// reflect the ball's direction if it hits the wall
+		
+				
 		break;
+	}
 
 	case 'k':
+	{
 		ballPos.x -= 0.1 * cos(ballRot);
 		ballPos.y -= 0.1 * sin(ballRot);
-		break;
+        
 
+		ball_look = ball_look + ballPos;
+
+		rollangle -= 0.1;
+
+		break;
+	}
 	case 'j':
-
+	{
 		ballRot += 1;
+		// if (ballRot > 2 * pi)
+		// 	ballRot = 0;
+
+		ball_look = RodriGeneral(ball_look, ball_up, -1);
+		ball_right = RodriGeneral(ball_right, ball_up, -1);
+
 		break;
+	}
 
 	case 'l':
 		printf("l pressed\n");
+	
+
 		ballRot -= 1;
+		// if (ballRot > 2 * pi)
+		// 	ballRot = 0;
+
+		ball_look = RodriGeneral(ball_look, ball_up, 1);
+		ball_right = RodriGeneral(ball_right, ball_up, 1);
+
 		break;
 	default:
 		break;
@@ -467,7 +487,7 @@ void mouseListener(int button, int state, int x, int y)
 void drawArrow()
 {
 	glPushMatrix();
-	glRotatef(90, 0, 1, 0);
+	// glRotatef(90, 0, 1, 0);
 	glPushMatrix();
 	{
 		glTranslatef(0, 0, 0.5);
@@ -511,16 +531,26 @@ void display()
 
 	glPushMatrix();
 	{
-
 		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
-		glRotatef(ballRot * 180.0 / pi, 0, 0, 1);
-		glPushMatrix();
-		{
-			// glTranslatef(cos(ballRot), sin(ballRot), 0);
-			drawArrow();
-		}
-		glPopMatrix();
+		glRotatef(rollangle * 180 / pi, ball_right.x, ball_right.y, ball_right.z);
 		drawSphere();
+	}
+	glPopMatrix();
+
+	// move arrow along the ball's direction
+	glPushMatrix();
+	{
+		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
+		glRotatef(ballRot * 180 / pi, 0, 0, 1);	
+		glRotatef(90, 0, 1, 0);
+		drawArrow();
+	}
+	glPopMatrix();
+
+	glPushMatrix();
+	{
+		glTranslatef(ballPos.x, ballPos.y, ballPos.z);
+		drawArrow();
 	}
 	glPopMatrix();
 
@@ -545,10 +575,32 @@ void init()
 
 	// give PERSPECTIVE parameters
 	gluPerspective(80, 1, 1, 1000.0);
+
 	// field of view in the Y (vertically)
 	// aspect ratio that determines the field of view in the X direction (horizontally)
 	// near distance
 	// far distance
+
+	float sectorStep = 2 * pi / sectorCount;
+	float stackStep = pi / stackCount;
+
+	float sectorAngle, stackAngle;
+
+	for (int i = 0; i <= sectorCount; i++)
+	{
+		sectorAngle = i * sectorStep;
+		for (int j = 0; j <= stackCount; j++)
+		{
+			double theta1 = sectorStep * i;
+			// double theta2 = sectorStep * (i + 1);
+			double phi1 = pi / 2.0 - stackStep * j;
+			// double phi2 = pi / 2.0 - stackStep * (j + 1);
+
+			Point p(sphereRadius * cos(phi1) * cos(theta1), sphereRadius * cos(phi1) * sin(theta1), sphereRadius * sin(phi1));
+
+			vertices[i].push_back(p);
+		}
+	}
 }
 
 void animate()
