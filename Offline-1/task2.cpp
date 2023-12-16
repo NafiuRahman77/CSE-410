@@ -106,6 +106,8 @@ public:
 	}
 };
 
+
+
 struct Point pos(3, 3, 5), u(0, 0, 1), r(-1 / sqrt(2.0), 1 / sqrt(2.0), 0), l(-1 / sqrt(2.0), -1 / sqrt(2.0), -2);
 struct Point ballPos(0, 0, 0);
 // perpendicular to ballPos
