@@ -32,6 +32,8 @@ public:
     Point operator^(const Point &p) const;
     bool operator==(const Point &p) const;
     bool operator!=(const Point &p) const;
+
+    double getMagnitude() const;
     
 }; // end class Point
 

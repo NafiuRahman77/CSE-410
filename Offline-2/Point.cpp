@@ -77,3 +77,7 @@ Point Point::operator^(const Point &p) const
     return Point(y * p.z - z * p.y, z * p.x - x * p.z, x * p.y - y * p.x);
 }
 
+double Point::getMagnitude() const
+{
+    return sqrt(x * x + y * y + z * z);
+}
