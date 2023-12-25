@@ -1,18 +1,21 @@
 //Triangle hpp class
 #pragma once
 #include "Point.hpp"
-#include <cmath>
+#include <bits/stdc++.h>
 
 class Triangle
 {
 private:
     Point a, b, c;
-
+    std::tuple<double, double, double> color = std::make_tuple(0.0, 0.0, 0.0);
 public:
     Triangle();
     Triangle(const Point &a, const Point &b, const Point &c);
     Triangle(const Triangle &t);
     ~Triangle();
+    //set color
+    void setColor();
+    std::tuple<double, double, double> getColor() const;
     Point getA() const;
     Point getB() const;
     Point getC() const;

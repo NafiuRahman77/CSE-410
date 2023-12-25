@@ -10,6 +10,20 @@ Triangle::Triangle(const Triangle &t) : a(t.a), b(t.b), c(t.c) {}
 
 Triangle::~Triangle() {}
 
+void Triangle::setColor()
+{
+    //set random color r g b in range 0 to 255
+    double r = rand() % 256;
+    double g = rand() % 256;
+    double b = rand() % 256;
+    color = std::make_tuple(r, g, b);
+}
+
+std::tuple<double, double, double> Triangle::getColor() const
+{
+    return color;
+}
+
 Point Triangle::getA() const { return a; }
 
 Point Triangle::getB() const { return b; }
@@ -85,3 +99,4 @@ Triangle &Triangle::operator=(const Triangle &t)
     c = t.c;
     return *this;
 }
+
