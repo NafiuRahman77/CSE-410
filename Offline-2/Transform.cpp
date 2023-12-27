@@ -137,5 +137,5 @@ Point Transform::transform(Point p)
 {
     std::vector<double> temp = {p.getX(), p.getY(), p.getZ(), p.getW()};
     std::vector<double> result = (*this) * temp;
-    return Point(result[0], result[1], result[2], result[3]);
+    return Point(result[0], result[1], result[2])/result[3];
 }
