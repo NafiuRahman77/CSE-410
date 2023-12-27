@@ -25,7 +25,7 @@ turtle.setup(800, 800)
 bob.speed(0)
 bob.pensize(2)
 bob.pu()
-bob.goto(0, 0)
+bob.goto(-50, 100)
 bob.pd()
 snowflake(bob, 200)
 

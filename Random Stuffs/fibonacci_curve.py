@@ -19,9 +19,9 @@ bob.pu()
 bob.goto(0, 0)
 bob.pd()
 
-iterations = 100
+iterations = 10
 angle = 25
-scale = calculate_scale(iterations)
+scale = 10
 
 fibonacci(bob, iterations, angle, scale)
 
