@@ -38,7 +38,61 @@ int main(){
     Transform t;
     st.push(t);
 
-    // print top of stack
-    st.top().print();
+    string command;
+    while(in>>command){
+
+        if(command=="triangle"){
+            Point p1,p2,p3;
+            //set p1.x p1.y p1.z from in
+            in>>x>>y>>z;
+            p1 = Point(x,y,z);
+            //set p2.x p2.y p2.z from in
+            in>>x>>y>>z;
+            p2 = Point(x,y,z);
+            //set p3.x p3.y p3.z from in
+            in>>x>>y>>z;
+            p3 = Point(x,y,z);
+            Triangle t(p1,p2,p3);
+            Point r1,r2,r3;
+            r1 = st.top().transform(t.getA());
+            r2 = st.top().transform(t.getB());
+            r3 = st.top().transform(t.getC());
+
+            out<<r1.getX()<<" "<<r1.getY()<<" "<<r1.getZ()<<endl;
+            out<<r2.getX()<<" "<<r2.getY()<<" "<<r2.getZ()<<endl;
+            out<<r3.getX()<<" "<<r3.getY()<<" "<<r3.getZ()<<endl;
+            
+        }
+        else if(command=="translate"){
+            double tx,ty,tz;
+            //set tx ty tz from in
+            in>>tx>>ty>>tz;
+            Transform t;
+            t.translate(tx,ty,tz);
+            st.top() = st.top()*t;
+        }
+        else if(command=="scale"){
+            double sx,sy,sz;
+            //set sx sy sz from in
+            in>>sx>>sy>>sz;
+            Transform t;
+            t.scale(sx,sy,sz);
+            st.top() = st.top()*t;
+        }
+        else if(command=="rotate"){
+            double angle,rx,ry,rz;
+            //set angle rx ry rz from in
+            in>>angle>>rx>>ry>>rz;
+            Transform t;
+            t.rotate(angle,rx,ry,rz);
+            st.top() = st.top()*t;
+        }
+        else if(command=="push"){
+            st.push(st.top());
+        }
+        else if(command=="pop"){
+            st.pop();
+        }
+    }
 
 }
