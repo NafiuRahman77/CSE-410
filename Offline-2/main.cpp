@@ -112,9 +112,8 @@ int main(){
 
     //stage 2
 
-    //in.open("stage1.txt");
-   // out.open("stage2.txt");
+    in.open("stage1.txt");
+    out.open("stage2.txt");
 
-   //cout<< cos(90 * acos(-1.0)/180.0)<<endl;
 
 }
