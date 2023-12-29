@@ -7,7 +7,9 @@
 using namespace std;
 
 int main(){
-    
+
+   // stage 1
+
     ifstream in("scene.txt");
     ofstream out("stage1.txt");
 
@@ -35,10 +37,13 @@ int main(){
     in>>far;
 
     stack<Transform> st;
-    Transform t;
-    st.push(t);
+    Transform tt;
+    st.push(tt);
 
     string command;
+
+    out<<fixed<<setprecision(7);
+    
     while(in>>command){
 
         if(command=="triangle"){
@@ -54,6 +59,9 @@ int main(){
             p3 = Point(x,y,z);
             Triangle t(p1,p2,p3);
             Point r1,r2,r3;
+            // cout<<t.getA().getX()<<" "<<t.getA().getY()<<" "<<t.getA().getZ()<<endl;
+            // cout<<t.getB().getX()<<" "<<t.getB().getY()<<" "<<t.getB().getZ()<<endl;
+            // cout<<t.getC().getX()<<" "<<t.getC().getY()<<" "<<t.getC().getZ()<<endl;
             r1 = st.top().transform(t.getA());
             r2 = st.top().transform(t.getB());
             r3 = st.top().transform(t.getC());
@@ -61,6 +69,7 @@ int main(){
             out<<r1.getX()<<" "<<r1.getY()<<" "<<r1.getZ()<<endl;
             out<<r2.getX()<<" "<<r2.getY()<<" "<<r2.getZ()<<endl;
             out<<r3.getX()<<" "<<r3.getY()<<" "<<r3.getZ()<<endl;
+            out<<endl;
             
         }
         else if(command=="translate"){
@@ -93,6 +102,19 @@ int main(){
         else if(command=="pop"){
             st.pop();
         }
+        else if(command=="end"){
+            break;
+        }
     }
+
+    in.close();
+    out.close();
+
+    //stage 2
+
+    //in.open("stage1.txt");
+   // out.open("stage2.txt");
+
+   //cout<< cos(90 * acos(-1.0)/180.0)<<endl;
 
 }

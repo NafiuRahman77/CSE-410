@@ -20,7 +20,7 @@ public:
     // scale matrix by a,b,c
     void scale(double a, double b, double c);
     // rotate matrix by a,b,c
-    void rotate(double a, double b, double c, double angle);
+    void rotate(double angle, double a, double b, double c);
     //transform a point
     Point transform(Point p);
     
