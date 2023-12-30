@@ -104,45 +104,37 @@ void Transform::scale(double a, double b, double c)
 
 void Transform::rotate(double angle, double a, double b, double cc)
 {
-    // set matrix to identity matrix
-    matrix = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
-    matrix[0][0] = 1;
-    matrix[1][1] = 1;
-    matrix[2][2] = 1;
-    matrix[3][3] = 1;
+    // Initialize matrix as identity matrix
+    matrix = {{1, 0, 0, 0},
+              {0, 1, 0, 0},
+              {0, 0, 1, 0},
+              {0, 0, 0, 1}};
 
-    double theta = angle * acos(-1.0) / 180.0;
-    double c = 0;
-    c = cos(theta);
-    double s = sin(theta);
-    // set precision of c and s
-    if (c < 0.0000000000000001 && c > -0.0000000000000001)
-        c = 0;
-    if (s < 0.0000000000000001 && s > -0.0000000000000001)
-        s = 0;
-    double t = 1 - c;
+    const double theta = angle * M_PI / 180.0;
+    const double c = cos(theta), s = sin(theta);
 
-    Point p = Point(a, b, cc);
-    p = p / p.getMagnitude();
-    double ax = p.getX();
-    double ay = p.getY();
-    double az = p.getZ();
+    // Set precision for c and s
+    const double epsilon = 1e-15;
+    const auto zero_if_near_zero = [epsilon](double val) { return (fabs(val) < epsilon) ? 0.0 : val; };
 
-    matrix[0][0] = t * ax * ax + c;
+    const double t = 1 - c;
 
-    matrix[0][1] = t * ax * ay - s * az;
-    matrix[0][2] = t * ax * az + s * ay;
+    Point p = Point(a, b, cc)/sqrt(a*a+b*b+cc*cc);
+    const double ax = a/sqrt(a*a+b*b+cc*cc), ay = b/sqrt(a*a+b*b+cc*cc), az = cc/sqrt(a*a+b*b+cc*cc);
 
-    matrix[1][0] = t * ax * ay + s * az;
-    matrix[1][1] = t * ay * ay + c;
-    matrix[1][2] = t * ay * az - s * ax;
+    matrix[0][0] = zero_if_near_zero(t * ax * ax + c);
+    matrix[0][1] = zero_if_near_zero(t * ax * ay - s * az);
+    matrix[0][2] = zero_if_near_zero(t * ax * az + s * ay);
 
-    matrix[2][0] = t * ax * az - s * ay;
-    matrix[2][1] = t * ay * az + s * ax;
-    matrix[2][2] = t * az * az + c;
+    matrix[1][0] = zero_if_near_zero(t * ax * ay + s * az);
+    matrix[1][1] = zero_if_near_zero(t * ay * ay + c);
+    matrix[1][2] = zero_if_near_zero(t * ay * az - s * ax);
 
-    matrix[3][3] = 1;
+    matrix[2][0] = zero_if_near_zero(t * ax * az - s * ay);
+    matrix[2][1] = zero_if_near_zero(t * ay * az + s * ax);
+    matrix[2][2] = zero_if_near_zero(t * az * az + c);
 }
+
 
 Point Transform::transform(Point p)
 {
