@@ -17,24 +17,17 @@ int main()
     Point eye, look, up;
     double fovY, aspectRatio, near, far;
 
-    // //set eye.x eye.y eye.z from in
     double x, y, z;
     in >> x >> y >> z;
     eye = Point(x, y, z);
-    // set look.x look.y look.z from in
     in >> x >> y >> z;
     look = Point(x, y, z);
-    // set up.x up.y up.z from in
     in >> x >> y >> z;
     up = Point(x, y, z);
 
-    // set fovY from in
     in >> fovY;
-    // set aspectRatio from in
     in >> aspectRatio;
-    // set near from in
     in >> near;
-    // set far from in
     in >> far;
 
     stack<Transform> st;
@@ -160,4 +153,97 @@ int main()
             break;
         }
     }
+
+    in.close();
+    out.close();
+    
+    // stage 3
+
+    in.open("stage2.txt");
+    out.open("stage3.txt");
+    
+    double fovX = fovY * aspectRatio;
+    double t = near * tan(fovY * acos(-1) / 360.0);
+    double rr = near * tan(fovX * acos(-1) / 360.0);
+
+    Transform P;
+
+    P.setMatrix({{near / rr, 0, 0, 0},
+                 {0, near / t, 0, 0},
+                 {0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near)},
+                 {0, 0, -1, 0}});
+    
+    Point p1, p2, p3;
+    while (in >> p1)
+    {              
+        in >> p2;
+        in >> p3;
+
+        Triangle t(p1, p2, p3);
+        Point r1, r2, r3;
+        r1 = P.transform(t.getA());
+        r2 = P.transform(t.getB());
+        r3 = P.transform(t.getC());
+
+        out << r1;
+        out << r2;
+        out << r3;
+        out << endl;
+
+        // Explicitly break at the end of the file (optional)
+        if (in.eof())
+        {
+            break;
+        }
+    }
+
+    in.close();
+    out.close();
+
+    // stage 4
+
+    in.open("config.txt");
+
+    int width, height;
+    in >> width >> height;
+
+    in.close();
+
+    in.open("stage3.txt");
+    out.open("z_buffer.txt");
+
+    vector<Triangle> triangles;
+
+    while (in >> p1)
+    {
+
+        in >> p2;
+        in >> p3;
+
+        Triangle t(p1, p2, p3);
+        triangles.push_back(t);
+
+        // Explicitly break at the end of the file (optional)
+        if (in.eof())
+        {
+            break;
+        }
+    }
+
+    in.close();
+
+    double boxtop = 1, boxbottom = -1, boxleft = -1, boxright = 1;
+    double dx = (boxright - boxleft) / width;
+    double dy = (boxtop - boxbottom) / height;
+    double topY = boxtop - dy / 2, leftX = boxleft + dx / 2, rightX = boxright - dx / 2, bottomY = boxbottom + dy / 2;
+    double z_max = 1.0;
+
+    vector<vector<double>> z_buffer(height, vector<double>(width, z_max));
+
+
+
+
+
+
+
 }

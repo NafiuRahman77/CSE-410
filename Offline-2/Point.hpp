@@ -1,6 +1,6 @@
 
 #pragma once
-
+#include <bits/stdc++.h>
 class Point
 {
 private:
@@ -32,6 +32,9 @@ public:
     Point operator^(const Point &p) const;
     bool operator==(const Point &p) const;
     bool operator!=(const Point &p) const;
+    //input output stream
+    friend std::ofstream &operator<<(std::ofstream &out, const Point &p);
+    friend std::ifstream &operator>>(std::ifstream &in, Point &p);
 
     double getMagnitude() const;
     

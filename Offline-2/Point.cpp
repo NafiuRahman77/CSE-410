@@ -1,6 +1,6 @@
 // Point class cpp
 #include "Point.hpp"
-#include <cmath>
+#include <bits/stdc++.h>
 
 Point::Point() : x(0), y(0), z(0), w(1) {}
 
@@ -75,6 +75,18 @@ double Point::operator*(const Point &p) const
 Point Point::operator^(const Point &p) const
 {
     return Point(y * p.z - z * p.y, z * p.x - x * p.z, x * p.y - y * p.x);
+}
+
+std::ofstream& operator<<(std::ofstream& out, const Point& p) {
+    out << p.getX() << " " << p.getY() << " " << p.getZ() << std::endl;
+    return out;
+}
+
+std::ifstream& operator>>(std::ifstream& in, Point& p) {
+    double x, y, z;
+    in >> x >> y >> z;
+    p = Point(x, y, z);
+    return in;
 }
 
 double Point::getMagnitude() const
