@@ -3,6 +3,7 @@
 #include "Point.hpp"
 #include "Triangle.hpp"
 #include "Transform.hpp"
+#include "bitmap_image.hpp"
 
 using namespace std;
 
@@ -239,9 +240,28 @@ int main()
     double z_max = 1.0;
 
     vector<vector<double>> z_buffer(height, vector<double>(width, z_max));
+    
+    //Create a bitmap_image object with Screen_Width X Screen_Height resolution and initialize its background color with black.
+    bitmap_image image(width, height);
+    image.set_all_channels(0, 0, 0);
 
+    // use iterator to iterate over all triangles
+    for(vector<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++){
+        Triangle t = *it;
+        Point p1 = t.getA();
+        Point p2 = t.getB();
+        Point p3 = t.getC();
+        
+        //find top scanline and bottom scanline of the triangle after necessary clipping
+        
 
+        
+    }
 
+    // save the image in a file
+    image.save_image("out.bmp");
+
+    return 0;
 
 
 
