@@ -1,13 +1,22 @@
 //Triangle hpp class
 #pragma once
-#include "Point.hpp"
 #include <bits/stdc++.h>
+#include <vector>
+#include "Point.hpp"
+
+static unsigned long int g_seed = 1;  
+inline int getRandomInt() 
+{ 
+g_seed = (214013 * g_seed + 2531011);  
+return (g_seed >> 16) & 0x7FFF; 
+} 
 
 class Triangle
 {
 private:
     Point a, b, c;
-    std::tuple<double, double, double> color = std::make_tuple(0.0, 0.0, 0.0);
+    std::vector<double> color;
+    
 public:
     Triangle();
     Triangle(const Point &a, const Point &b, const Point &c);
@@ -15,7 +24,7 @@ public:
     ~Triangle();
     //set color
     void setColor();
-    std::tuple<double, double, double> getColor() const;
+    std::vector<double> getColor() const;
     Point getA() const;
     Point getB() const;
     Point getC() const;

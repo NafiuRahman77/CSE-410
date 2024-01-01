@@ -115,9 +115,9 @@ int main()
     in.open("stage1.txt");
     out.open("stage2.txt");
 
-    Point l = (look - eye)/(look - eye).getMagnitude();
-    Point r = (l ^ up)/(l ^ up).getMagnitude();
-    Point u = (r ^ l)/(r ^ l).getMagnitude();
+    Point l = (look - eye) / (look - eye).getMagnitude();
+    Point r = (l ^ up) / (l ^ up).getMagnitude();
+    Point u = (r ^ l) / (r ^ l).getMagnitude();
 
     Transform T;
     T.translate(-eye.getX(), -eye.getY(), -eye.getZ());
@@ -157,12 +157,12 @@ int main()
 
     in.close();
     out.close();
-    
+
     // stage 3
 
     in.open("stage2.txt");
     out.open("stage3.txt");
-    
+
     double fovX = fovY * aspectRatio;
     double t = near * tan(fovY * acos(-1) / 360.0);
     double rr = near * tan(fovX * acos(-1) / 360.0);
@@ -173,10 +173,10 @@ int main()
                  {0, near / t, 0, 0},
                  {0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near)},
                  {0, 0, -1, 0}});
-    
+
     Point p1, p2, p3;
     while (in >> p1)
-    {              
+    {
         in >> p2;
         in >> p3;
 
@@ -240,30 +240,164 @@ int main()
     double z_max = 1.0;
 
     vector<vector<double>> z_buffer(height, vector<double>(width, z_max));
-    
-    //Create a bitmap_image object with Screen_Width X Screen_Height resolution and initialize its background color with black.
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            z_buffer[i][j] = z_max;
+        }
+    }
+
+    // Create a bitmap_image object with Screen_Width X Screen_Height resolution and initialize its background color with black.
     bitmap_image image(width, height);
     image.set_all_channels(0, 0, 0);
 
     // use iterator to iterate over all triangles
-    for(vector<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++){
+    for (vector<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++)
+    {
         Triangle t = *it;
+        t.setColor();
         Point p1 = t.getA();
         Point p2 = t.getB();
         Point p3 = t.getC();
-        
-        //find top scanline and bottom scanline of the triangle after necessary clipping
-        
 
-        
+        // grab the colors
+        vector<double> color = t.getColor();
+
+        cout << color[0] << " " << color[1] << " " << color[2] << endl;
+
+        // find top scanline and bottom scanline of the triangle after necessary clipping
+
+        double maxY = max(p1.getY(), max(p2.getY(), p3.getY()));
+        double minY = min(p1.getY(), min(p2.getY(), p3.getY()));
+        double maxX = max(p1.getX(), max(p2.getX(), p3.getX()));
+        double minX = min(p1.getX(), min(p2.getX(), p3.getX()));
+
+        // do necessary clipping
+        if (minX < boxleft)
+            minX = boxleft;
+        if (maxX > boxright)
+            maxX = boxright;
+        if (minY < boxbottom)
+            minY = boxbottom;
+        if (maxY > boxtop)
+            maxY = boxtop;
+
+        // find the top scanline and bottom scanline
+        int topScanline = round((topY - maxY) / dy);
+        int bottomScanline = round((topY - minY) / dy);
+
+        // iterate over all scanlines
+        for (int i = topScanline; i <= bottomScanline; i++)
+        {
+            double y = topY - i * dy;
+            // find leftmost and rightmost intersecting columns
+            double leftX = boxleft, rightX = boxright;
+            if (p1.getY() != p2.getY())
+            {
+                double x1 = p1.getX() + (y - p1.getY()) * (p2.getX() - p1.getX()) / (p2.getY() - p1.getY());
+                if (p1.getY() > p2.getY())
+                {
+                    if (x1 < leftX)
+                        leftX = x1;
+                    if (x1 > rightX)
+                        rightX = x1;
+                }
+                else
+                {
+                    if (x1 > leftX)
+                        leftX = x1;
+                    if (x1 < rightX)
+                        rightX = x1;
+                }
+            }
+
+            if (p2.getY() != p3.getY())
+            {
+                double x2 = p2.getX() + (y - p2.getY()) * (p3.getX() - p2.getX()) / (p3.getY() - p2.getY());
+                if (p2.getY() > p3.getY())
+                {
+                    if (x2 < leftX)
+                        leftX = x2;
+                    if (x2 > rightX)
+                        rightX = x2;
+                }
+                else
+                {
+                    if (x2 > leftX)
+                        leftX = x2;
+                    if (x2 < rightX)
+                        rightX = x2;
+                }
+            }
+
+            if (p3.getY() != p1.getY())
+            {
+                double x3 = p3.getX() + (y - p3.getY()) * (p1.getX() - p3.getX()) / (p1.getY() - p3.getY());
+                if (p3.getY() > p1.getY())
+                {
+                    if (x3 < leftX)
+                        leftX = x3;
+                    if (x3 > rightX)
+                        rightX = x3;
+                }
+                else
+                {
+                    if (x3 > leftX)
+                        leftX = x3;
+                    if (x3 < rightX)
+                        rightX = x3;
+                }
+            }
+
+            // iterate over all columns
+            for (int j = round((leftX - boxleft) / dx); j <= round((rightX - boxleft) / dx); j++)
+            {
+                double x = boxleft + j * dx;
+                // find barycentric coordinates
+                double alpha = ((p2.getY() - p3.getY()) * (x - p3.getX()) + (p3.getX() - p2.getX()) * (y - p3.getY())) / ((p2.getY() - p3.getY()) * (p1.getX() - p3.getX()) + (p3.getX() - p2.getX()) * (p1.getY() - p3.getY()));
+                double beta = ((p3.getY() - p1.getY()) * (x - p3.getX()) + (p1.getX() - p3.getX()) * (y - p3.getY())) / ((p2.getY() - p3.getY()) * (p1.getX() - p3.getX()) + (p3.getX() - p2.getX()) * (p1.getY() - p3.getY()));
+                double gamma = 1 - alpha - beta;
+
+                // find z value
+                double z = alpha * p1.getZ() + beta * p2.getZ() + gamma * p3.getZ();
+
+                // check if the pixel is inside the triangle and update z_buffer and check if the pixel inside depth bounds
+                if(i>=0 && i<height && j>=0 && j<width){
+                    if (alpha >= 0 && beta >= 0 && gamma >= 0 && z < z_buffer[i][j] && z <= 1 && z >= -1)
+                {
+                    z_buffer[i][j] = z;
+                    image.set_pixel(j, i, color[0] , color[1] , color[2] );
+                }
+                }
+                
+            }
+        }
     }
+
+    out << fixed << setprecision(6);
+    // Save the z_buffer values in “z_buffer.txt”. Save only those values which are less than z_max
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (z_buffer[i][j] < z_max)
+            {
+                out << z_buffer[i][j] << "    ";
+            }
+            else
+            {
+                out << "";
+            }
+        }
+        out << endl;
+    }
+
+    out.close();
 
     // save the image in a file
     image.save_image("out.bmp");
 
     return 0;
-
-
-
-
 }

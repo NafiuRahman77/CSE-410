@@ -12,17 +12,19 @@ Triangle::~Triangle() {}
 
 void Triangle::setColor()
 {
-    //set random color r g b in range 0 to 255
-    double r = rand() % 256;
-    double g = rand() % 256;
-    double b = rand() % 256;
-    color = std::make_tuple(r, g, b);
+
+    // //initialize color vector with size 3 
+    color.clear();
+
+    for (int i = 0; i < 3; i++)
+    {
+        color.push_back(getRandomInt() % 256);
+    }
+    
 }
 
-std::tuple<double, double, double> Triangle::getColor() const
-{
-    return color;
-}
+std::vector<double> Triangle::getColor() const { return color; }
+
 
 Point Triangle::getA() const { return a; }
 
