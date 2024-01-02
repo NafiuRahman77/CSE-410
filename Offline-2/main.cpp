@@ -45,13 +45,10 @@ int main()
         if (command == "triangle")
         {
             Point p1, p2, p3;
-            // set p1.x p1.y p1.z from in
             in >> x >> y >> z;
             p1 = Point(x, y, z);
-            // set p2.x p2.y p2.z from in
             in >> x >> y >> z;
             p2 = Point(x, y, z);
-            // set p3.x p3.y p3.z from in
             in >> x >> y >> z;
             p3 = Point(x, y, z);
 
@@ -69,7 +66,6 @@ int main()
         else if (command == "translate")
         {
             double tx, ty, tz;
-            // set tx ty tz from in
             in >> tx >> ty >> tz;
             Transform t;
             t.translate(tx, ty, tz);
@@ -78,7 +74,6 @@ int main()
         else if (command == "scale")
         {
             double sx, sy, sz;
-            // set sx sy sz from in
             in >> sx >> sy >> sz;
             Transform t;
             t.scale(sx, sy, sz);
@@ -87,7 +82,6 @@ int main()
         else if (command == "rotate")
         {
             double angle, rx, ry, rz;
-            // set angle rx ry rz from in
             in >> angle >> rx >> ry >> rz;
             Transform t;
             t.rotate(angle, rx, ry, rz);
@@ -148,7 +142,6 @@ int main()
         out << r3.getX() << " " << r3.getY() << " " << r3.getZ() << endl;
         out << endl;
 
-        // Explicitly break at the end of the file (optional)
         if (in.eof())
         {
             break;
@@ -191,7 +184,6 @@ int main()
         out << r3;
         out << endl;
 
-        // Explicitly break at the end of the file (optional)
         if (in.eof())
         {
             break;
@@ -224,7 +216,6 @@ int main()
         Triangle t(p1, p2, p3);
         triangles.push_back(t);
 
-        // Explicitly break at the end of the file (optional)
         if (in.eof())
         {
             break;
@@ -249,11 +240,9 @@ int main()
         }
     }
 
-    // Create a bitmap_image object with Screen_Width X Screen_Height resolution and initialize its background color with black.
     bitmap_image image(width, height);
     image.set_all_channels(0, 0, 0);
 
-    // use iterator to iterate over all triangles
     for (vector<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++)
     {
         Triangle t = *it;
@@ -262,141 +251,114 @@ int main()
         Point p2 = t.getB();
         Point p3 = t.getC();
 
-        // grab the colors
-        vector<double> color = t.getColor();
-
-        cout << color[0] << " " << color[1] << " " << color[2] << endl;
-
-        // find top scanline and bottom scanline of the triangle after necessary clipping
-
         double maxY = max(p1.getY(), max(p2.getY(), p3.getY()));
         double minY = min(p1.getY(), min(p2.getY(), p3.getY()));
-        double maxX = max(p1.getX(), max(p2.getX(), p3.getX()));
-        double minX = min(p1.getX(), min(p2.getX(), p3.getX()));
 
-        // do necessary clipping
-        if (minX < boxleft)
-            minX = boxleft;
-        if (maxX > boxright)
-            maxX = boxright;
-        if (minY < boxbottom)
-            minY = boxbottom;
-        if (maxY > boxtop)
-            maxY = boxtop;
+        if (maxY > topY)
+        {
+            maxY = topY;
+        }
 
-        // find the top scanline and bottom scanline
-        int topScanline = round((topY - maxY) / dy);
-        int bottomScanline = round((topY - minY) / dy);
+        if (minY < bottomY)
+        {
+            minY = bottomY;
+        }
 
-        // iterate over all scanlines
-        for (int i = topScanline; i <= bottomScanline; i++)
+        // find top scanline and bottom scanline
+        int top_scanline = round((topY - maxY) / dy);
+        int bottom_scanline = round((topY - minY) / dy);
+
+        for (int i = top_scanline; i <= bottom_scanline; i++)
         {
             double y = topY - i * dy;
-            // find leftmost and rightmost intersecting columns
-            double leftX = boxleft, rightX = boxright;
-            if (p1.getY() != p2.getY())
+
+            // create an array using Points of the triangle
+            vector<Point> points(3);
+            points[0] = t.getA();
+            points[1] = t.getB();
+            points[2] = t.getC();
+            double maxX = INT_MIN, minX = INT_MAX;
+
+            for (int t = 0; t < 3; t++)
             {
-                double x1 = p1.getX() + (y - p1.getY()) * (p2.getX() - p1.getX()) / (p2.getY() - p1.getY());
-                if (p1.getY() > p2.getY())
+                int next = (t + 1) % 3;
+
+                if (abs(points[t].getY() - points[next].getY()) <= abs(1e-9))
                 {
-                    if (x1 < leftX)
-                        leftX = x1;
-                    if (x1 > rightX)
-                        rightX = x1;
+                    continue;
                 }
-                else
+
+                double smaller = min(points[t].getY(), points[next].getY());
+                double bigger = max(points[t].getY(), points[next].getY());
+                if (y >= smaller && y <= bigger)
                 {
-                    if (x1 > leftX)
-                        leftX = x1;
-                    if (x1 < rightX)
-                        rightX = x1;
+
+                    double x = points[t].getX() + (y - points[t].getY()) * (points[next].getX() - points[t].getX()) / (points[next].getY() - points[t].getY());
+                    maxX = max(maxX, x);
+                    minX = min(minX, x);
                 }
             }
 
-            if (p2.getY() != p3.getY())
+            if (maxX > rightX)
             {
-                double x2 = p2.getX() + (y - p2.getY()) * (p3.getX() - p2.getX()) / (p3.getY() - p2.getY());
-                if (p2.getY() > p3.getY())
-                {
-                    if (x2 < leftX)
-                        leftX = x2;
-                    if (x2 > rightX)
-                        rightX = x2;
-                }
-                else
-                {
-                    if (x2 > leftX)
-                        leftX = x2;
-                    if (x2 < rightX)
-                        rightX = x2;
-                }
+                maxX = rightX;
             }
 
-            if (p3.getY() != p1.getY())
+            if (minX < leftX)
             {
-                double x3 = p3.getX() + (y - p3.getY()) * (p1.getX() - p3.getX()) / (p1.getY() - p3.getY());
-                if (p3.getY() > p1.getY())
-                {
-                    if (x3 < leftX)
-                        leftX = x3;
-                    if (x3 > rightX)
-                        rightX = x3;
-                }
-                else
-                {
-                    if (x3 > leftX)
-                        leftX = x3;
-                    if (x3 < rightX)
-                        rightX = x3;
-                }
+                minX = leftX;
             }
 
-            // iterate over all columns
-            for (int j = round((leftX - boxleft) / dx); j <= round((rightX - boxleft) / dx); j++)
+            int left_col = round((minX - leftX) / dx);
+            int right_col = round((maxX - leftX) / dx);
+
+            for (int j = left_col; j <= right_col; j++)
             {
-                double x = boxleft + j * dx;
-                // find barycentric coordinates
-                double alpha = ((p2.getY() - p3.getY()) * (x - p3.getX()) + (p3.getX() - p2.getX()) * (y - p3.getY())) / ((p2.getY() - p3.getY()) * (p1.getX() - p3.getX()) + (p3.getX() - p2.getX()) * (p1.getY() - p3.getY()));
-                double beta = ((p3.getY() - p1.getY()) * (x - p3.getX()) + (p1.getX() - p3.getX()) * (y - p3.getY())) / ((p2.getY() - p3.getY()) * (p1.getX() - p3.getX()) + (p3.getX() - p2.getX()) * (p1.getY() - p3.getY()));
-                double gamma = 1 - alpha - beta;
+                double x = leftX + j * dx;
+                Point s = p1, pp0 = p2 - p1, pp1 = p3 - p2;
 
-                // find z value
-                double z = alpha * p1.getZ() + beta * p2.getZ() + gamma * p3.getZ();
+                double k0 = ((pp1.getY() * (x - s.getX()) - pp1.getX() * (y - s.getY())) / (pp0.getX() * pp1.getY() - pp1.getX() * pp0.getY()));
+                double k1 = ((pp0.getY() * (x - s.getX()) - pp0.getX() * (y - s.getY())) / (pp1.getX() * pp0.getY() - pp0.getX() * pp1.getY()));
 
-                // check if the pixel is inside the triangle and update z_buffer and check if the pixel inside depth bounds
-                if(i>=0 && i<height && j>=0 && j<width){
-                    if (alpha >= 0 && beta >= 0 && gamma >= 0 && z < z_buffer[i][j] && z <= 1 && z >= -1)
+                Point tp = s + pp0 * k0 + pp1 * k1;
+
+                double depth = s.getZ() + pp0.getZ() * k0 + pp1.getZ() * k1;
+
+                if (i >= 0 && i < height && j >= 0 && j < width)
                 {
-                    z_buffer[i][j] = z;
-                    image.set_pixel(j, i, color[0] , color[1] , color[2] );
+
+                    if (depth < z_buffer[i][j] && depth < z_max && depth > -z_max)
+                    {
+                        z_buffer[i][j] = depth;
+                        image.set_pixel(j, i, t.getColor()[0], t.getColor()[1], t.getColor()[2]);
+                    }
                 }
-                }
-                
             }
         }
     }
 
     out << fixed << setprecision(6);
-    // Save the z_buffer values in “z_buffer.txt”. Save only those values which are less than z_max
+
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            if (z_buffer[i][j] < z_max)
+
+            if (abs(z_buffer[i][j] - z_max) <= abs(1e-9))
             {
-                out << z_buffer[i][j] << "    ";
-            }
-            else
-            {
+
                 out << "";
             }
+
+            else
+
+                out << z_buffer[i][j] << "\t";
         }
         out << endl;
     }
 
     out.close();
 
-    // save the image in a file
     image.save_image("out.bmp");
 
     return 0;
