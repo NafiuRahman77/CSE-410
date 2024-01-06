@@ -14,9 +14,11 @@ def pythagorean_tree(t, depth, length, angle):
 
 
 blob = turtle.Turtle()
+#set bg color black
+turtle.bgcolor("black")
 blob.speed(0)
 blob.pensize(2)
-blob.color("green")
+blob.color("white")
 
 blob.penup()
 blob.goto(0, -200)
