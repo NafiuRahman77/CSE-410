@@ -40,8 +40,11 @@ public:
     bool isObtuse() const;
     bool isAcute() const;
     bool isDegenerate() const;
+    bool isInside(const Point &p) const;
+    bool isOnBoundary(const Point &p) const;
+    bool isOutside(const Point &p) const;
     bool operator==(const Triangle &t) const;
     bool operator!=(const Triangle &t) const;
     Triangle &operator=(const Triangle &t);
-    double getZ(double x, double y) const;
+    
 }; // end class Triangle

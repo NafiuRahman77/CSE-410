@@ -84,6 +84,30 @@ bool Triangle::isDegenerate() const
     return (a - b) * (b - c) == 0 || (b - c) * (c - a) == 0 || (c - a) * (a - b) == 0;
 }
 
+bool Triangle::isInside(const Point &p) const {
+    double mainArea = getArea();
+
+    double subArea1 = Triangle(p, b, c).getArea();
+    double subArea2 = Triangle(a, p, c).getArea();
+    double subArea3 = Triangle(a, b, p).getArea();
+
+    double sumSubAreas = subArea1 + subArea2 + subArea3;
+    
+    return std::abs(sumSubAreas - mainArea) < 1e-9;
+}
+
+bool Triangle::isOnBoundary(const Point &p) const {
+    double subArea1 = Triangle(p, b, c).getArea();
+    double subArea2 = Triangle(a, p, c).getArea();
+    double subArea3 = Triangle(a, b, p).getArea();
+
+    return std::abs(subArea1) < 1e-9 || std::abs(subArea2) < 1e-9 || std::abs(subArea3) < 1e-9;
+}
+
+bool Triangle::isOutside(const Point &p) const {
+    return !isInside(p) && !isOnBoundary(p);
+}
+
 bool Triangle::operator==(const Triangle &t) const
 {
     return (a == t.a && b == t.b && c == t.c) || (a == t.b && b == t.c && c == t.a) || (a == t.c && b == t.a && c == t.b);

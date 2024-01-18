@@ -19,12 +19,7 @@ int main()
     double fovY, aspectRatio, near, far;
 
     double x, y, z;
-    in >> x >> y >> z;
-    eye = Point(x, y, z);
-    in >> x >> y >> z;
-    look = Point(x, y, z);
-    in >> x >> y >> z;
-    up = Point(x, y, z);
+    in >> eye >> look >> up;
 
     in >> fovY;
     in >> aspectRatio;
@@ -36,6 +31,7 @@ int main()
     st.push(tt);
 
     string command;
+    Point p1, p2, p3;
 
     out << fixed << setprecision(7);
 
@@ -44,13 +40,8 @@ int main()
 
         if (command == "triangle")
         {
-            Point p1, p2, p3;
-            in >> x >> y >> z;
-            p1 = Point(x, y, z);
-            in >> x >> y >> z;
-            p2 = Point(x, y, z);
-            in >> x >> y >> z;
-            p3 = Point(x, y, z);
+            
+            in >> p1 >> p2 >> p3;
 
             Point r1, r2, r3;
 
@@ -58,9 +49,9 @@ int main()
             r2 = st.top().transform(p2);
             r3 = st.top().transform(p3);
 
-            out << r1.getX() << " " << r1.getY() << " " << r1.getZ() << endl;
-            out << r2.getX() << " " << r2.getY() << " " << r2.getZ() << endl;
-            out << r3.getX() << " " << r3.getY() << " " << r3.getZ() << endl;
+            out << r1 ;
+            out << r2 ;
+            out << r3 ;
             out << endl;
         }
         else if (command == "translate")
@@ -123,13 +114,10 @@ int main()
                  {0, 0, 0, 1}});
 
     Transform V = R * T;
-    while (in >> x >> y >> z)
+    while (in >> p1)
     {
-        Point p1(x, y, z);
-        in >> x >> y >> z;
-        Point p2(x, y, z);
-        in >> x >> y >> z;
-        Point p3(x, y, z);
+        in >> p2;
+        in >> p3;
 
         Triangle t(p1, p2, p3);
         Point r1, r2, r3;
@@ -137,9 +125,9 @@ int main()
         r2 = V.transform(t.getB());
         r3 = V.transform(t.getC());
 
-        out << r1.getX() << " " << r1.getY() << " " << r1.getZ() << endl;
-        out << r2.getX() << " " << r2.getY() << " " << r2.getZ() << endl;
-        out << r3.getX() << " " << r3.getY() << " " << r3.getZ() << endl;
+        out << r1;
+        out << r2;
+        out << r3;
         out << endl;
 
         if (in.eof())
@@ -167,7 +155,6 @@ int main()
                  {0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near)},
                  {0, 0, -1, 0}});
 
-    Point p1, p2, p3;
     while (in >> p1)
     {
         in >> p2;

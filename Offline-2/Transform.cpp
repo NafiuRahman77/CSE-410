@@ -75,31 +75,39 @@ void Transform::print()
 
 void Transform::translate(double a, double b, double c)
 {
-    // set matrix to identity matrix
-    matrix = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
-    matrix[0][0] = 1;
-    matrix[1][1] = 1;
-    matrix[2][2] = 1;
-    matrix[3][3] = 1;
+    
+    //matrix = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
+    // matrix[0][0] = 1;
+    // matrix[1][1] = 1;
+    // matrix[2][2] = 1;
+    // matrix[3][3] = 1;
 
-    matrix[0][3] = a;
-    matrix[1][3] = b;
-    matrix[2][3] = c;
+    // matrix[0][3] = a;
+    // matrix[1][3] = b;
+    // matrix[2][3] = c;
+    matrix = {{1, 0, 0, a},
+              {0, 1, 0, b},
+              {0, 0, 1, c},
+              {0, 0, 0, 1}};
 }
 
 void Transform::scale(double a, double b, double c)
 {
     // set matrix to identity matrix
-    matrix = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
-    matrix[0][0] = 1;
-    matrix[1][1] = 1;
-    matrix[2][2] = 1;
-    matrix[3][3] = 1;
+    //matrix = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
+    // matrix[0][0] = 1;
+    // matrix[1][1] = 1;
+    // matrix[2][2] = 1;
+    // matrix[3][3] = 1;
 
-    matrix[0][0] = a;
-    matrix[1][1] = b;
-    matrix[2][2] = c;
-    matrix[3][3] = 1;
+    // matrix[0][0] = a;
+    // matrix[1][1] = b;
+    // matrix[2][2] = c;
+    // matrix[3][3] = 1;
+    matrix = {{a, 0, 0, 0},
+              {0, b, 0, 0},
+              {0, 0, c, 0},
+              {0, 0, 0, 1}};
 }
 
 void Transform::rotate(double angle, double a, double b, double cc)
