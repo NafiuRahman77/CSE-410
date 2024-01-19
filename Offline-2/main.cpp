@@ -40,7 +40,7 @@ int main()
 
         if (command == "triangle")
         {
-            
+
             in >> p1 >> p2 >> p3;
 
             Point r1, r2, r3;
@@ -49,9 +49,9 @@ int main()
             r2 = st.top().transform(p2);
             r3 = st.top().transform(p3);
 
-            out << r1 ;
-            out << r2 ;
-            out << r3 ;
+            out << r1;
+            out << r2;
+            out << r3;
             out << endl;
         }
         else if (command == "translate")
@@ -145,8 +145,8 @@ int main()
     out.open("stage3.txt");
 
     double fovX = fovY * aspectRatio;
-    double t = near * tan(fovY * acos(-1) / 360.0);
-    double rr = near * tan(fovX * acos(-1) / 360.0);
+    double t = near * tan((fovY * acos(-1) / 180.0)/2.0);
+    double rr = near * tan((fovX * acos(-1) / 180.0)/2.0);
 
     Transform P;
 
@@ -215,9 +215,25 @@ int main()
     double dx = (boxright - boxleft) / width;
     double dy = (boxtop - boxbottom) / height;
     double topY = boxtop - dy / 2, leftX = boxleft + dx / 2, rightX = boxright - dx / 2, bottomY = boxbottom + dy / 2;
-    double z_max = 1.0;
+    double z_max = 1.0, z_min = -1.0;
 
-    vector<vector<double>> z_buffer(height, vector<double>(width, z_max));
+    // vector<vector<double>> z_buffer(height, vector<double>(width, z_max));
+
+    // Allocate memory for the z-buffer
+    double **z_buffer = new double *[height];
+    for (int i = 0; i < height; ++i)
+    {
+        z_buffer[i] = new double[width];
+    }
+
+    // Initialize z-buffer with z_max
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            z_buffer[i][j] = z_max;
+        }
+    }
 
     for (int i = 0; i < height; i++)
     {
@@ -314,7 +330,7 @@ int main()
                 if (i >= 0 && i < height && j >= 0 && j < width)
                 {
 
-                    if (depth < z_buffer[i][j] && depth < z_max && depth > -z_max)
+                    if (depth < z_buffer[i][j] && depth < z_max && depth > z_min)
                     {
                         z_buffer[i][j] = depth;
                         image.set_pixel(j, i, t.getColor()[0], t.getColor()[1], t.getColor()[2]);
@@ -347,6 +363,12 @@ int main()
     out.close();
 
     image.save_image("out.bmp");
+
+    for (int i = 0; i < height; i++)
+    {
+        delete[] z_buffer[i];
+    }
+    delete[] z_buffer;
 
     return 0;
 }
