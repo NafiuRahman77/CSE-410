@@ -1,7 +1,7 @@
 #!/bin/bash
 g++ *.cpp -o raster 
 mkdir -p outputs
-for d in specs/IOs/*/ ; do
+for d in IOs/*/ ; do
     cp "${d}scene.txt" ./
     cp "${d}config.txt" ./
     mkdir -p "outputs/${d}"
