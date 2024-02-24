@@ -16,12 +16,6 @@ typedef struct {
 
 double anim_x = 0.25;
 
-void anim8 (int x) {
-    anim_x += 0.01;
-    glutPostRedisplay();
-    if (anim_x < 1.0) glutTimerFunc (25, anim8, 0);
-}
-
 using namespace std;
 
 void drawCircle(double radius, Point center){
@@ -37,20 +31,7 @@ void drawCircle(double radius, Point center){
 
 double angle = 0, angle2=0;
 
-void drawFunc(function<double(double)> func, double lx, double rx, int prec){
-    if(prec==0){
-        //drawSegment(point(lx,func(lx),0),point(rx,func(rx),0));
 
-        glBegin(GL_LINES);
-        glVertex2d(lx, func(lx));
-        glVertex2d(rx, func(rx));
-        glEnd();
-        return;
-    }
-    drawFunc(func,lx,(lx+rx)/2,prec-1);
-    drawFunc(func,(lx+rx)/2,rx,prec-1);
-    return;
-}
 void display(){
     glClear(GL_COLOR_BUFFER_BIT);
     // draw circle
