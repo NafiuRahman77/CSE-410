@@ -120,6 +120,10 @@ void loadData()
         }
     }
 
+    Object *f = new Floor(400, 10);
+	f->setCoefficients(0.4, 0.2, 0.2, 0.2);
+    objects.push_back(f);
+
     int number_of_point_lights;
     scene_file >> number_of_point_lights;
 
@@ -141,6 +145,9 @@ void loadData()
     //     SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
     //     spot_lights.push_back(sl);
     // }
+
+    
+	
 }
 
 double windowWidth = 500, windowHeight = 500;
@@ -148,6 +155,7 @@ double viewAngle = 80;
 
 void capture(){
     
+
     image.setwidth_height(image_width, image_height);
     image.set_all_channels(0, 0, 0);
 
@@ -159,7 +167,7 @@ void capture(){
 
     topleft = topleft + r * (du / 2.0) - u * (dv / 2.0);
     int nearest = -1;
-    double t_min = 1000000000,t;
+    double t_min = 1000000000,t=0;
     for (int i = 0; i < image_width; i++)
     {
         for (int j = 0; j < image_height; j++)
@@ -169,6 +177,7 @@ void capture(){
             Vector3D direction = curPixel - pos;
             direction = direction/sqrt(direction.x*direction.x + direction.y*direction.y + direction.z*direction.z);
             Ray ray(pos, direction);
+            
             nearest = -1;
             t_min = -1;
             Color f(0,0,0);
@@ -177,11 +186,12 @@ void capture(){
                 Color c(0,0,0);
                 t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,1);
 
+
                 if(t <= 0)
                 {
                     continue;
                 }
-
+                cout<<t<<endl;
                 if(t_min < 0)
                 {
                     t_min = t;
@@ -442,8 +452,8 @@ void display()
     // Triangle t2(Vector3D(30, 60, 0), Vector3D(50, 30, 0), Vector3D(50, 45, 50));
     // t2.setColor(Color(0, 0, 1));
     // t2.draw();
-    Floor f(400, 10);
-    f.draw();
+    // Floor f(400, 10);
+    // f.draw();
 
     for (int i = 0; i < objects.size(); i++)
     {

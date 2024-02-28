@@ -212,21 +212,23 @@ public:
 
     virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
     {
-        double t = intersect(r, c, level);
+        const double t = intersect(r, c, level);
+        
         if (level == 0)
             return t;
-        if (t < 0)
+        if (t <= 0)
 
             return -1;
+        cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
         Color intersectionPointColor = getColorAt(intersectionPoint);
         c = intersectionPointColor * coefficients[0]; // ambient component
         // calculate normal at intersection point
         Vector3D normal = getNormal(intersectionPoint);
-        normal=normal/sqrt(normal*normal);
+        normal = normal / sqrt(normal * normal);
 
-        //cout << pointlights.size() << endl;
+        // cout << pointlights.size() << endl;
 
         for (int i = 0; i < pointlights.size(); i++)
         {
@@ -245,7 +247,7 @@ public:
             for (int j = 0; j < objects.size(); j++)
             {
                 double temp = objects[j]->intersect(shadowRay, c, 0);
-                if (temp > 0 && temp < dist)
+                if (temp > 0.00001 && temp < dist)
                 {
                     inShadow = true;
                     break;
@@ -268,8 +270,7 @@ public:
                 }
             }
         }
-
-
+        return t;
     }
     virtual double intersect(Ray r, Color &c, int level)
     {
@@ -316,12 +317,13 @@ public:
             return -1;
         double t1 = (-B + sqrt(D)) / (2 * A);
         double t2 = (-B - sqrt(D)) / (2 * A);
-        if (t1 < 0 && t2 < 0)
-            return -1;
-        else if (t1 < 0 || t2 < 0)
-            return std::max(t1, t2);
+      
+        if (t2 > 0.001)
+            return t2;
+        else if (t1 > 0.001)
+            return t1;
         else
-            return std::min(t1, t2);
+            return -1;
     }
 
     virtual Vector3D getNormal(Vector3D pt)
@@ -388,14 +390,81 @@ public:
         if(detA==0)
             return -1;
         double t = detT / detA;
-
+        //std::cout<<"Triangle "<<t<<std::endl;
         if (beta > 0 && gamma > 0 && beta + gamma <= 1 && t>0)
         {
             return t;
         }
-        return -1;
-   
 
+
+         return -1;
+        // normalize r
+        // Vector3D n_rdir = r.dir / sqrt(r.dir * r.dir);
+
+        // Vector3D normal = (B - A) ^ (C - A);
+        // normal = normal / sqrt(normal * normal);
+
+        // double D = -(normal * A);
+        // double denominator = normal * n_rdir;
+        // if (fabs(denominator) < 0.00001)
+        //     return -1;
+        // double t = -1 * (normal * r.start + D) / denominator;
+
+        // if (t < 0)
+        //     return -1;
+
+        // Vector3D e1 = B - A;
+        // Vector3D e2 = C - A;
+        // Vector3D P = r.start + (n_rdir * t) - A;
+        // float a = -1.0f;
+        // float b = -1.0f;
+
+        // if (abs(e1.x * e2.y - e1.y * e2.x) >= 0.000001f && abs(e2.x * e1.y - e1.x * e2.y) >= 0.000001f)
+        // {
+        //     a = (P.x * e2.y - P.y * e2.x) / (e1.x * e2.y - e1.y * e2.x);
+        //     b = (P.x * e1.y - P.y * e1.x) / (e2.x * e1.y - e1.x * e2.y);
+        // }
+        // else if (abs(e1.y * e2.z - e1.z * e2.y) >= 0.000001f && abs(e2.y * e1.z - e1.y * e2.z) >= 0.000001f)
+        // {
+        //     a = (P.y * e2.z - P.z * e2.y) / (e1.y * e2.z - e1.z * e2.y);
+        //     b = (P.y * e1.z - P.z * e1.y) / (e2.y * e1.z - e1.y * e2.z);
+        // }
+        // else if (abs(e1.z * e2.x - e1.x * e2.z) >= 0.000001f && abs(e2.x * e1.x - e1.z * e2.x) >= 0.000001f)
+        // {
+        //     a = (P.z * e2.x - P.x * e2.z) / (e1.z * e2.x - e1.x * e2.z);
+        //     b = (P.z * e1.x - P.x * e1.z) / (e2.z * e1.x - e1.z * e2.x);
+        // }
+        // else
+        // {
+        //     return -3.0f;
+        // }
+
+        // if (a < 0.0f)
+        // {
+        //     return -4.0f;
+        // }
+
+        // if (a > 1.0f)
+        // {
+        //     return -5.0f;
+        // }
+
+        // if (b < 0.0f)
+        // {
+        //     return -6.0f;
+        // }
+
+        // if (b > 1.0f)
+        // {
+        //     return -7.0f;
+        // }
+
+        // if (!(a + b <= 1.0f))
+        // {
+        //     return -8.0f;
+        // }
+
+        // return t;
     }
 
     // find normal of the triangle
@@ -413,7 +482,7 @@ public:
     }
 };
 
-class Floor : Object
+class Floor : public Object
 {
 public:
     int tileCount;
