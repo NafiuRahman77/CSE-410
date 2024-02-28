@@ -26,19 +26,23 @@ void loadData()
 
     // load from scene.txt
     ifstream scene_file;
-    scene_file.open("scene.txt");
+    scene_file.open("scene_test.txt");
 
     scene_file >> recursion_level;
     scene_file >> image_width;
     image_height = image_width;
 
+    cout<<recursion_level<<endl;
+    cout<<image_width<<endl;
+
     int number_of_objects;
     scene_file >> number_of_objects;
-
+    cout << number_of_objects << endl;
     for (int i = 0; i < number_of_objects; i++)
     {
         string object_type;
         scene_file >> object_type;
+        cout << object_type << endl;
 
         if (object_type == "sphere")
         {
@@ -50,13 +54,19 @@ void loadData()
             scene_file >> color_r >> color_g >> color_b;
             scene_file >> ambient >> diffuse >> specular >> reflection >> shininess;
 
+            cout << x << " " << y << " " << z << " " << radius << endl;
+            cout << color_r << " " << color_g << " " << color_b << endl;
+            cout << ambient << " " << diffuse << " " << specular << " " << reflection << endl;
+            cout << shininess << endl;
+            cout<<endl;
+
             Object *s = new Sphere(Vector3D(x, y, z), radius);
             s->setColor(Color(color_r, color_g, color_b));
             s->setCoefficients(ambient, diffuse, specular, reflection);
             s->setShine(shininess);
             objects.push_back(s);
         }
-        else if (object_type == "triangle")
+        if (object_type == "triangle")
         {
             double x1, y1, z1, x2, y2, z2, x3, y3, z3;
             double color_r, color_g, color_b;
@@ -66,6 +76,13 @@ void loadData()
             scene_file >> color_r >> color_g >> color_b;
             scene_file >> ambient >> diffuse >> specular >> reflection >> shininess;
 
+            cout<<x1<<" "<<y1<<" "<<z1<<endl;
+            cout<<x2<<" "<<y2<<" "<<z2<<endl;
+            cout<<x3<<" "<<y3<<" "<<z3<<endl;
+            cout<<color_r<<" "<<color_g<<" "<<color_b<<endl;
+            cout<<ambient<<" "<<diffuse<<" "<<specular<<" "<<reflection<<endl;
+            cout<<shininess<<endl;
+
             Object *t = new Triangle(Vector3D(x1, y1, z1), Vector3D(x2, y2, z2), Vector3D(x3, y3, z3));
             t->setColor(Color(color_r, color_g, color_b));
             t->setCoefficients(ambient, diffuse, specular, reflection);
@@ -73,7 +90,7 @@ void loadData()
             objects.push_back(t);
         }
 
-        else if (object_type == "general")
+        if (object_type == "general")
         {
             double A, B, C, D, E, F, G, H, I, J;
             double reference_x, reference_y, reference_z, length, width, height;
@@ -84,6 +101,12 @@ void loadData()
             scene_file >> reference_x >> reference_y >> reference_z >> length >> width >> height;
             scene_file >> color_r >> color_g >> color_b;
             scene_file >> ambient >> diffuse >> specular >> reflection >> shininess;
+
+            cout<<A<<" "<<B<<" "<<C<<" "<<D<<" "<<E<<" "<<F<<" "<<G<<" "<<H<<" "<<I<<" "<<J<<endl;
+            cout<<reference_x<<" "<<reference_y<<" "<<reference_z<<" "<<length<<" "<<width<<" "<<height<<endl;
+            cout<<color_r<<" "<<color_g<<" "<<color_b<<endl;
+            cout<<ambient<<" "<<diffuse<<" "<<specular<<" "<<reflection<<endl;
+            cout<<shininess<<endl;
 
             Object *g = new General(A, B, C, D, E, F, G, H, I, J);
             g->reference_point = Vector3D(reference_x, reference_y, reference_z);
@@ -108,16 +131,16 @@ void loadData()
         point_lights.push_back(pl);
     }
 
-    int number_of_spot_lights;
-    scene_file >> number_of_spot_lights;
+    // int number_of_spot_lights;
+    // scene_file >> number_of_spot_lights;
 
-    for (int i = 0; i < number_of_spot_lights; i++)
-    {
-        double x, y, z, intensity_r, intensity_g, intensity_b, direction_x, direction_y, direction_z, angle;
-        scene_file >> x >> y >> z >> intensity_r >> intensity_g >> intensity_b >> direction_x >> direction_y >> direction_z >> angle;
-        SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
-        spot_lights.push_back(sl);
-    }
+    // for (int i = 0; i < number_of_spot_lights; i++)
+    // {
+    //     double x, y, z, intensity_r, intensity_g, intensity_b, direction_x, direction_y, direction_z, angle;
+    //     scene_file >> x >> y >> z >> intensity_r >> intensity_g >> intensity_b >> direction_x >> direction_y >> direction_z >> angle;
+    //     SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
+    //     spot_lights.push_back(sl);
+    // }
 }
 
 double windowWidth = 500, windowHeight = 500;
@@ -148,27 +171,48 @@ void capture(){
             Ray ray(pos, direction);
             nearest = -1;
             t_min = -1;
-            Color c(1,0,0);
+            Color f(0,0,0);
             for (int k = 0; k < objects.size(); k++)
             {
-                t = objects[k]->intersect(ray,c, 0);
-                if (t > 0 && t < t_min)
+                Color c(0,0,0);
+                t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,1);
+
+                if(t <= 0)
+                {
+                    continue;
+                }
+
+                if(t_min < 0)
                 {
                     t_min = t;
                     nearest = k;
+                    f = c;
+                }
+                else if ( t < t_min)
+                {
+                    t_min = t;
+                    nearest = k;
+                    f = c;
                 }
             }
-            if (nearest != -1)
+            // if (nearest != -1)
+            // {
+            //     Color color = objects[nearest]->getColor();
+            //     image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
+            // }
+            if(nearest != -1)
             {
-                Color color = objects[nearest]->getColor();
-                image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
+                image.set_pixel(i,j,f.r*255,f.g*255,f.b*255);
             }
 
         }
+
+        
     }
 
 
-
+    image.save_image("out.bmp");
+    cout<<"Image saved"<<endl;
 
 }
 
@@ -194,6 +238,11 @@ void keyboardListener(unsigned char key, int x, int y)
 {
     switch (key)
     {
+    
+    case '0':
+        capture();
+        
+        break;
 
     case '1':
 
@@ -293,27 +342,27 @@ void specialKeyListener(int key, int x, int y)
     switch (key)
     {
     case GLUT_KEY_DOWN: // down arrow key, zoom out
-        pos = pos - l * 0.01;
+        pos = pos - l * 1;
         break;
 
     case GLUT_KEY_UP: // up arrow key, zoom in
-        pos = pos + l * 0.01;
+        pos = pos + l * 1;
         break;
 
     case GLUT_KEY_RIGHT: // right arrow, move right
-        pos = pos + r * 0.01;
+        pos = pos + r * 1;
         break;
 
     case GLUT_KEY_LEFT: // left arrow, move left
-        pos = pos - r * 0.01;
+        pos = pos - r * 1;
         break;
 
     case GLUT_KEY_PAGE_UP: // page up, move up
-        pos = pos + u * 0.01;
+        pos = pos + u * 1;
         break;
 
     case GLUT_KEY_PAGE_DOWN: // page down, move down
-        pos = pos - u * 0.01;
+        pos = pos - u * 1;
         break;
 
     case GLUT_KEY_INSERT:
@@ -382,19 +431,29 @@ void display()
     // 50 30 0
     // 70 60 0
     // 50 45 50
-    Triangle t(Vector3D(50, 30, 0), Vector3D(70, 60, 0), Vector3D(50, 45, 50));
-    t.setColor(Color(0, 1, 0));
-    t.draw();
+    // Triangle t(Vector3D(50, 30, 0), Vector3D(70, 60, 0), Vector3D(50, 45, 50));
+    // t.setColor(Color(0, 1, 0));
+    // t.draw();
 
-    Triangle t1(Vector3D(70, 60, 0), Vector3D(30, 60, 0), Vector3D(50, 45, 50));
-    t1.setColor(Color(1, 0, 0));
-    t1.draw();
+    // Triangle t1(Vector3D(70, 60, 0), Vector3D(30, 60, 0), Vector3D(50, 45, 50));
+    // t1.setColor(Color(1, 0, 0));
+    // t1.draw();
 
-    Triangle t2(Vector3D(30, 60, 0), Vector3D(50, 30, 0), Vector3D(50, 45, 50));
-    t2.setColor(Color(0, 0, 1));
-    t2.draw();
+    // Triangle t2(Vector3D(30, 60, 0), Vector3D(50, 30, 0), Vector3D(50, 45, 50));
+    // t2.setColor(Color(0, 0, 1));
+    // t2.draw();
     Floor f(400, 10);
     f.draw();
+
+    for (int i = 0; i < objects.size(); i++)
+    {
+        objects[i]->draw();
+    }
+    //cout<<objects.size()<<endl; 
+
+    for(int i = 0; i < point_lights.size(); i++){
+        point_lights[i].draw();
+    }
 
     // ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
     glutSwapBuffers();
@@ -415,6 +474,8 @@ void init()
 
     // give PERSPECTIVE parameters
     gluPerspective(80, 1, 1, 1000.0);
+    loadData();
+    
 }
 
 void animate()

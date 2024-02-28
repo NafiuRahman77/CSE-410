@@ -2,9 +2,6 @@
 #pragma once
 #include <bits/stdc++.h>
 #include <GL/glut.h>
-#include <iostream>
-
-using namespace std;
 class Color
 {
 public:
@@ -42,6 +39,8 @@ public:
     {
         return Color(this->r + c.r, this->g + c.g, this->b + c.b);
     }
+
+
 };
 class Vector3D
 {
@@ -210,10 +209,10 @@ public:
         return color;
     }
 
-    virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
+    virtual double intersect_2(vector<PointLight> pointlights,vector<SpotLight> spotlights, vector<Object*> objects, Ray r, Color &c, int level)
     {
         double t = intersect(r, c, level);
-        if (level == 0)
+        if(level == 0)
             return t;
         if (t < 0)
 
@@ -221,54 +220,105 @@ public:
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
         Color intersectionPointColor = getColorAt(intersectionPoint);
-        c = intersectionPointColor * coefficients[0]; // ambient component
+        c = intersectionPointColor*coefficients[0]; // ambient component
         // calculate normal at intersection point
         Vector3D normal = getNormal(intersectionPoint);
-        normal=normal/sqrt(normal*normal);
 
-        //cout << pointlights.size() << endl;
-
-        for (int i = 0; i < pointlights.size(); i++)
+        for(int i=0;i<pointlights.size();i++)
         {
             Vector3D lightDir = intersectionPoint - pointlights[i].light_pos;
+            lightDir = lightDir / sqrt(lightDir * lightDir);
+            Ray rayl = Ray(pointlights[i].light_pos, lightDir);
 
-            double lightDistance = sqrt(lightDir * lightDir);
-            lightDir = lightDir / lightDistance;
-
-            Ray shadowRay(pointlights[i].light_pos, lightDir);
-            // if intersectionPoint is in shadow, the diffuse
-            // and specular components need not be calculated
-
-            double dist = intersect(shadowRay, c, 0);
-
-            bool inShadow = false;
-            for (int j = 0; j < objects.size(); j++)
+            bool flag = false;
+            for(int j=0;j<objects.size();j++)
             {
-                double temp = objects[j]->intersect(shadowRay, c, 0);
-                if (temp > 0 && temp < dist)
+                if(objects[j]->intersect(rayl, c, level) > 0)
                 {
-                    inShadow = true;
+                    flag = true;
                     break;
                 }
             }
-            if (!inShadow)
-            {
 
-                double lambert = -(lightDir * normal);
-                if (lambert > 0)
+            if(flag == false)
+            {
+                double lambert = lightDir * normal;
+                if(lambert > 0)
                 {
                     c = c + (intersectionPointColor * coefficients[1] * lambert); // diffuse component
-                    Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
-                    double phong = -(r.dir * reflectionDir);
-                    if (phong > 0)
+                    Vector3D reflection = (normal * (normal * lightDir * 2)) - lightDir;
+                    double phong = reflection * r.dir;
+                    if(phong > 0)
                     {
                         phong = pow(phong, shine);
                         c = c + (pointlights[i].color * coefficients[2] * phong); // specular component
                     }
                 }
             }
+
+        
+            
         }
 
+        for(int i=0;i<spotlights.size();i++)
+        {
+            Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
+            lightDir = lightDir / sqrt(lightDir * lightDir);
+            Ray rayl = Ray(spotlights[i].point_light.light_pos, lightDir);
+
+            bool flag = false;
+            for(int j=0;j<objects.size();j++)
+            {
+                if(objects[j]->intersect(rayl, c, level) > 0)
+                {
+                    flag = true;
+                    break;
+                }
+            }
+
+            if(flag == false)
+            {
+                double lambert = lightDir * normal;
+                if(lambert > 0)
+                {
+                    c = c + (intersectionPointColor * coefficients[1] * lambert); // diffuse component
+                    Vector3D reflection = (normal * (normal * lightDir * 2)) - lightDir;
+                    double phong = reflection * r.dir;
+                    if(phong > 0)
+                    {
+                        phong = pow(phong, shine);
+                        c = c + (spotlights[i].point_light.color * coefficients[2] * phong); // specular component
+                    }
+                }
+            }
+
+        
+            
+        }
+
+        if(coefficients[3] > 0)
+        {
+            Vector3D reflection = (normal * (normal * r.dir * 2)) - r.dir;
+            Ray reflectedRay = Ray(intersectionPoint, reflection);
+            Color reflectedColor = Color(0, 0, 0);
+            double tmin = 999999;
+            int minIndex = -1;
+            for(int i=0;i<objects.size();i++)
+            {
+                double t = objects[i]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level-1);
+                if(t > 0 && t < tmin)
+                {
+                    tmin = t;
+                    minIndex = i;
+                }
+            }
+            if(minIndex != -1)
+            {
+                c = c + reflectedColor * coefficients[3];
+            }
+        }
+
+        return t;
 
     }
     virtual double intersect(Ray r, Color &c, int level)
@@ -385,17 +435,14 @@ public:
         double gamma = detGamma / detA;
         // t = det(matrixT) / detA
         double detT = matrixT[0][0] * (matrixT[1][1] * matrixT[2][2] - matrixT[1][2] * matrixT[2][1]) - matrixT[0][1] * (matrixT[1][0] * matrixT[2][2] - matrixT[1][2] * matrixT[2][0]) + matrixT[0][2] * (matrixT[1][0] * matrixT[2][1] - matrixT[1][1] * matrixT[2][0]);
-        if(detA==0)
-            return -1;
         double t = detT / detA;
-
-        if (beta > 0 && gamma > 0 && beta + gamma <= 1 && t>0)
+        if (t < 0)
+            return -1;
+        if (beta >= 0 && gamma >= 0 && beta + gamma <= 1)
         {
             return t;
         }
         return -1;
-   
-
     }
 
     // find normal of the triangle
@@ -456,7 +503,7 @@ public:
             color = {1.0, 1.0, 1.0}; // White square
         else
             color = {0.0, 0.0, 0.0}; // Black square
-
+        
         return color;
     }
 
