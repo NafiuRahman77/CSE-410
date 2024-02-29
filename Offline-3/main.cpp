@@ -121,7 +121,7 @@ void loadData()
     }
 
     Object *f = new Floor(400, 10);
-	f->setCoefficients(0.5, 0.3, 0.25, 0.125);
+	f->setCoefficients(0.4, 0.1, 0.2, 0.2);
     f->setShine(50);
     objects.push_back(f);
 
@@ -185,7 +185,7 @@ void capture(){
             for (int k = 0; k < objects.size(); k++)
             {
                 Color c(0,0,0);
-                t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,1);
+                t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,0);
 
 
                 if(t <= 0)
@@ -213,6 +213,9 @@ void capture(){
             // }
             if(nearest != -1)
             {
+                
+                double t = objects[nearest]->intersect_2(point_lights,spot_lights,objects,ray,f,1);
+                
                 image.set_pixel(i,j,f.r*255,f.g*255,f.b*255);
             }
 

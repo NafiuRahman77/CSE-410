@@ -164,6 +164,8 @@ public:
     {
         this->start = start;
         this->dir = dir;
+        if(dir*dir!=0)
+            this->dir = dir / sqrt(dir * dir);
     }
 
     Vector3D getPoint(double t)
@@ -178,6 +180,7 @@ public:
     Vector3D reference_point; // should have x, y, z
     double height, width, length;
     Color color;
+    int id = -1;
     std::vector<double> coefficients; // ambient, diffuse, specular, reflection coefficients
     int shine;                        // exponent term of specular component
     Object()
@@ -216,6 +219,10 @@ public:
 
         if (level == 0)
             return t;
+        
+        if(level>=4)
+            return t;
+
         if (t <= 0)
 
             return -1;
@@ -225,10 +232,9 @@ public:
         Color intersectionPointColor = getColorAt(intersectionPoint);
         c = intersectionPointColor * coefficients[0]; // ambient component
         // calculate normal at intersection point
-        Vector3D normal = getNormal(intersectionPoint);
+        Vector3D normal = getNormal(intersectionPoint); 
+    
         normal = normal / sqrt(normal * normal);
-
-        // cout << pointlights.size() << endl;
 
         for (int i = 0; i < pointlights.size(); i++)
         {
@@ -238,34 +244,33 @@ public:
             lightDir = lightDir / lightDistance;
 
             Ray shadowRay(pointlights[i].light_pos, lightDir);
-            // if intersectionPoint is in shadow, the diffuse
-            // and specular components need not be calculated
 
             double dist = intersect(shadowRay, c, 0);
-
+            
             bool inShadow = false;
             for (int j = 0; j < objects.size(); j++)
             {
                 double temp = objects[j]->intersect(shadowRay, c, 0);
                 if (temp > 0.00001 && temp < dist)
                 {
-
                     inShadow = true;
-                    
-                     break;
+                    break;
                 }
             }
-           if (!inShadow)
+
+            if (!inShadow)
             {
                 Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                 double lambert = -(lightDir * normal);
-                if (lambert > 0)
+                //cout<<lambert<<endl;
+                if (lambert >= 0)
                 {
                     c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
                 }
 
-                double phong = -(r.dir * lightDir);
-                if (phong > 0)
+                double phong =  -(r.dir * lightDir);
+                //cout<<phong<<endl;
+                if (phong >= 0)
                 {
                     phong = pow(phong, shine);
                     c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[2] * phong); // specular component
@@ -273,50 +278,93 @@ public:
             }
         }
 
-        for (int i = 0; i < spotlights.size(); i++)
-        {
-            Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
+        // for (int i = 0; i < spotlights.size(); i++)
+        // {
+        //     Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
 
-            double lightDistance = sqrt(lightDir * lightDir);
-            lightDir = lightDir / lightDistance;
+        //     double lightDistance = sqrt(lightDir * lightDir);
+        //     lightDir = lightDir / lightDistance;
 
-            double angle = acos(lightDir * spotlights[i].light_direction);
-            if (angle <= spotlights[i].cutoff_angle)
-            {
-                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
-                // if intersectionPoint is in shadow, the diffuse
-                // and specular components need not be calculated
+        //     double angle = acos(lightDir * spotlights[i].light_direction);
+        //     if (angle <= spotlights[i].cutoff_angle)
+        //     {
+        //         Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
+        //         // if intersectionPoint is in shadow, the diffuse
+        //         // and specular components need not be calculated
 
-                double dist = intersect(shadowRay, c, 0);
+        //         double dist = intersect(shadowRay, c, 0);
 
-                bool inShadow = false;
-                for (int j = 0; j < objects.size(); j++)
-                {
-                    double temp = objects[j]->intersect(shadowRay, c, 0);
-                    if (temp > 0.00001 && temp < dist)
-                    {
-                        inShadow = true;
-                        break;
-                    }
-                }
-                if (!inShadow)
-                {
-                    Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
-                    double lambert = -(lightDir * normal);
-                    if (lambert > 0)
-                    {
-                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[1] * lambert); // diffuse component
-                    }
+        //         bool inShadow = false;
+        //         for (int j = 0; j < objects.size(); j++)
+        //         {
+        //             double temp = objects[j]->intersect(shadowRay, c, 0);
+        //             if (temp > 0.00001 && temp < dist)
+        //             {
+        //                 inShadow = true;
+        //                 break;
+        //             }
+        //         }
+        //         if (!inShadow)
+        //         {
+        //             Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
+        //             double lambert = -(lightDir * normal);
+        //             if (lambert > 0)
+        //             {
+        //                 c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[1] * lambert); // diffuse component
+        //             }
 
-                    double phong = -(r.dir * lightDir);
-                    if (phong > 0)
-                    {
-                        phong = pow(phong, shine);
-                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[2] * phong); // specular component
-                    }
-                }
-            }
-        }
+        //             double phong = -(r.dir * lightDir);
+        //             if (phong > 0)
+        //             {
+        //                 phong = pow(phong, shine);
+        //                 c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[2] * phong); // specular component
+        //             }
+        //         }
+        //     }
+        // }
+
+        // // find nearest intersection object and do recursive call
+
+        // // construct reflected ray from intersection point
+        // //  actually slightly forward from the point (by moving the
+        // //  start a little bit towards the reflection direction)
+        // //  to avoid self intersection
+
+        //   Vector3D reflectionDir = r.dir - normal * 2 * (r.dir * normal);
+
+        //     reflectionDir = reflectionDir / sqrt(reflectionDir * reflectionDir);
+
+        //     Ray reflectedRay(intersectionPoint + reflectionDir * 0.0001, reflectionDir);
+        //     double t_reflected = -1;
+        //     int nearest = -1;
+        //     for (int i = 0; i < objects.size(); i++)
+        //     {
+        //         double temp = objects[i]->intersect(reflectedRay, c, 0);
+
+        //         if (temp > 0.00001 && (t_reflected < 0 || temp < t_reflected))
+        //         {
+
+        //             t_reflected = temp;
+        //             nearest = i;
+        //         }
+        //     }
+        //     if (nearest != -1)
+        //     {
+        //         // cout << "inside reflected ray" << endl;
+        //         if (level == 1 && nearest == 1)
+        //         {
+
+        //             // cout<<normal.x<<" "<<normal.y<<" "<<normal.z<<endl;
+        //             // cout<<r.dir.x<<" "<<r.dir.y<<" "<<r.dir.z<<endl;
+        //             // cout<<"reflected"<<reflectedRay.dir.x<<" "<<reflectedRay.dir.y<<" "<<reflectedRay.dir.z<<endl;
+        //             // cout<<endl;
+        //         }
+
+        //         Color reflectedColor;
+        //         objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1);
+        //         c = c + reflectedColor * coefficients[3];
+        //     }
+        
         return t;
     }
     virtual double intersect(Ray r, Color &c, int level)
@@ -341,6 +389,7 @@ public:
     {
         reference_point = C;
         length = R;
+        id = 0;
     }
     void draw()
     {
@@ -362,15 +411,24 @@ public:
         double D = B * B - 4 * A * C;
         if (D < 0)
             return -1;
+        if(A<0.00001)
+            return -C/B;
+
         double t1 = (-B + sqrt(D)) / (2 * A);
         double t2 = (-B - sqrt(D)) / (2 * A);
 
-        if (t2 > 0.001)
-            return t2;
-        else if (t1 > 0.001)
-            return t1;
-        else
+        if (t1 < 0 && t2 < 0)
             return -1;
+        
+        if(t1<0.0f)
+        {
+            return -1;
+        }
+        if(t2>=0.0f)
+        {
+            return t2;
+        }
+        
     }
 
     virtual Vector3D getNormal(Vector3D pt)
@@ -396,6 +454,7 @@ public:
         this->A = A;
         this->B = B;
         this->C = C;
+        id = 1;
     }
     void draw()
     {
@@ -514,7 +573,14 @@ public:
     }
 
     // find normal of the triangle
-    virtual Vector3D getNormal()
+    // virtual Vector3D getNormal()
+    // {
+    //     Vector3D normal = (B - A) ^ (C - A);
+    //     normal = normal / sqrt(normal * normal);
+    //     return normal;
+    // }
+
+    virtual Vector3D getNormal(Vector3D pt)
     {
         Vector3D normal = (B - A) ^ (C - A);
         normal = normal / sqrt(normal * normal);
@@ -537,6 +603,7 @@ public:
         reference_point = (-floorWidth / 2, -floorWidth / 2, 0);
         length = tileWidth;
         tileCount = floorWidth / tileWidth;
+        id = 2;
     }
     void draw()
     {
@@ -621,15 +688,40 @@ public:
         this->H = H;
         this->I = I;
         this->J = J;
+
+        id = 3;
     }
 
     void draw()
     {
-        return;
+        // draw a general quadratic surface using OpenGL
+
+        // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
     }
 
     double intersect(Ray r, Color c, int level)
     {
-        // find if the ray intersects the general object
+        // find if the ray intersects the general quadratic surface
+        // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
+        // ○ Ray-quadric surface intersection (by plugging in Px = R0x + t*Rdx and similarly Py
+        // and Pz from the ray, into the general 3D quadratic equation)
+        // ○ If two values of t are obtained, check which one (or none or both) falls within the
+        // reference cube i.e. the bounding box within which the general quadric surface
+        // needs to be drawn. If any dimension of the bounding box is 0, no clipping along
+        // that dimension is required.
+        // ○ Normal = (𝜕F/𝜕x, 𝜕F/𝜕y, 𝜕F/𝜕z) [Substitute x, y, z values with that of the
+        // intersection point to obtain normals at different points]
+
+        double a = A * r.dir.x * r.dir.x + B * r.dir.y * r.dir.y + C * r.dir.z * r.dir.z + D * r.dir.x * r.dir.y + E * r.dir.x * r.dir.z + F * r.dir.y * r.dir.z;
+        double b = 2 * (A * r.start.x * r.dir.x + B * r.start.y * r.dir.y + C * r.start.z * r.dir.z) + D * (r.start.x * r.dir.y + r.start.y * r.dir.x) + E * (r.start.x * r.dir.z + r.start.z * r.dir.x) + F * (r.start.y * r.dir.z + r.start.z * r.dir.y) + G * r.dir.x + H * r.dir.y + I * r.dir.z;
+        double c_ = A * r.start.x * r.start.x + B * r.start.y * r.start.y + C * r.start.z * r.start.z + D * r.start.x * r.start.y + E * r.start.x * r.start.z + F * r.start.y * r.start.z + G * r.start.x + H * r.start.y + I * r.start.z + J;
+
+        double D = b * b - 4 * a * c_;
+
+        if (D < 0)
+            return -1;
+
+        double t1 = (-b + sqrt(D)) / (2 * a);
+        double t2 = (-b - sqrt(D)) / (2 * a);
     }
 };
