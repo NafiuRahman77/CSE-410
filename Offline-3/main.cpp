@@ -121,7 +121,8 @@ void loadData()
     }
 
     Object *f = new Floor(400, 10);
-	f->setCoefficients(0.4, 0.2, 0.2, 0.2);
+	f->setCoefficients(0.5, 0.3, 0.25, 0.125);
+    f->setShine(50);
     objects.push_back(f);
 
     int number_of_point_lights;
@@ -135,16 +136,16 @@ void loadData()
         point_lights.push_back(pl);
     }
 
-    // int number_of_spot_lights;
-    // scene_file >> number_of_spot_lights;
+    int number_of_spot_lights;
+    scene_file >> number_of_spot_lights;
 
-    // for (int i = 0; i < number_of_spot_lights; i++)
-    // {
-    //     double x, y, z, intensity_r, intensity_g, intensity_b, direction_x, direction_y, direction_z, angle;
-    //     scene_file >> x >> y >> z >> intensity_r >> intensity_g >> intensity_b >> direction_x >> direction_y >> direction_z >> angle;
-    //     SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
-    //     spot_lights.push_back(sl);
-    // }
+    for (int i = 0; i < number_of_spot_lights; i++)
+    {
+        double x, y, z, intensity_r, intensity_g, intensity_b, direction_x, direction_y, direction_z, angle;
+        scene_file >> x >> y >> z >> intensity_r >> intensity_g >> intensity_b >> direction_x >> direction_y >> direction_z >> angle;
+        SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
+        spot_lights.push_back(sl);
+    }
 
     
 	
@@ -191,7 +192,7 @@ void capture(){
                 {
                     continue;
                 }
-                cout<<t<<endl;
+                //cout<<t<<endl;
                 if(t_min < 0)
                 {
                     t_min = t;
@@ -250,6 +251,7 @@ void keyboardListener(unsigned char key, int x, int y)
     {
     
     case '0':
+    cout<<spot_lights.size()<<endl;
         capture();
         
         break;
@@ -463,6 +465,10 @@ void display()
 
     for(int i = 0; i < point_lights.size(); i++){
         point_lights[i].draw();
+    }
+
+    for(int i = 0; i < spot_lights.size(); i++){
+        spot_lights[i].draw();
     }
 
     // ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)

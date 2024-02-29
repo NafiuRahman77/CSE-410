@@ -213,13 +213,13 @@ public:
     virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
     {
         const double t = intersect(r, c, level);
-        
+
         if (level == 0)
             return t;
         if (t <= 0)
 
             return -1;
-        cout << "t: " << t << endl;
+        // cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
         Color intersectionPointColor = getColorAt(intersectionPoint);
@@ -249,23 +249,70 @@ public:
                 double temp = objects[j]->intersect(shadowRay, c, 0);
                 if (temp > 0.00001 && temp < dist)
                 {
+
                     inShadow = true;
-                    break;
+                    
+                     break;
                 }
             }
-            if (!inShadow)
+           if (!inShadow)
             {
-
+                Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                 double lambert = -(lightDir * normal);
                 if (lambert > 0)
                 {
-                    c = c + (intersectionPointColor * coefficients[1] * lambert); // diffuse component
+                    c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
+                }
+
+                double phong = -(r.dir * lightDir);
+                if (phong > 0)
+                {
+                    phong = pow(phong, shine);
+                    c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[2] * phong); // specular component
+                }
+            }
+        }
+
+        for (int i = 0; i < spotlights.size(); i++)
+        {
+            Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
+
+            double lightDistance = sqrt(lightDir * lightDir);
+            lightDir = lightDir / lightDistance;
+
+            double angle = acos(lightDir * spotlights[i].light_direction);
+            if (angle <= spotlights[i].cutoff_angle)
+            {
+                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
+                // if intersectionPoint is in shadow, the diffuse
+                // and specular components need not be calculated
+
+                double dist = intersect(shadowRay, c, 0);
+
+                bool inShadow = false;
+                for (int j = 0; j < objects.size(); j++)
+                {
+                    double temp = objects[j]->intersect(shadowRay, c, 0);
+                    if (temp > 0.00001 && temp < dist)
+                    {
+                        inShadow = true;
+                        break;
+                    }
+                }
+                if (!inShadow)
+                {
                     Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
-                    double phong = -(r.dir * reflectionDir);
+                    double lambert = -(lightDir * normal);
+                    if (lambert > 0)
+                    {
+                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[1] * lambert); // diffuse component
+                    }
+
+                    double phong = -(r.dir * lightDir);
                     if (phong > 0)
                     {
                         phong = pow(phong, shine);
-                        c = c + (pointlights[i].color * coefficients[2] * phong); // specular component
+                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[2] * phong); // specular component
                     }
                 }
             }
@@ -317,7 +364,7 @@ public:
             return -1;
         double t1 = (-B + sqrt(D)) / (2 * A);
         double t2 = (-B - sqrt(D)) / (2 * A);
-      
+
         if (t2 > 0.001)
             return t2;
         else if (t1 > 0.001)
@@ -387,17 +434,16 @@ public:
         double gamma = detGamma / detA;
         // t = det(matrixT) / detA
         double detT = matrixT[0][0] * (matrixT[1][1] * matrixT[2][2] - matrixT[1][2] * matrixT[2][1]) - matrixT[0][1] * (matrixT[1][0] * matrixT[2][2] - matrixT[1][2] * matrixT[2][0]) + matrixT[0][2] * (matrixT[1][0] * matrixT[2][1] - matrixT[1][1] * matrixT[2][0]);
-        if(detA==0)
+        if (detA == 0)
             return -1;
         double t = detT / detA;
-        //std::cout<<"Triangle "<<t<<std::endl;
-        if (beta > 0 && gamma > 0 && beta + gamma <= 1 && t>0)
+        // std::cout<<"Triangle "<<t<<std::endl;
+        if (beta > 0 && gamma > 0 && beta + gamma <= 1 && t > 0)
         {
             return t;
         }
 
-
-         return -1;
+        return -1;
         // normalize r
         // Vector3D n_rdir = r.dir / sqrt(r.dir * r.dir);
 
@@ -541,7 +587,8 @@ public:
             return -1;
 
         Vector3D intersection = r.start + (r.dir * t);
-        if (intersection.x >= -tileCount / 2 * length && intersection.x <= tileCount / 2 * length && intersection.y >= -tileCount / 2 * length && intersection.y <= tileCount / 2 * length)
+        if (intersection.x >= -tileCount / 2 * length && intersection.x <= tileCount / 2 * length &&
+            intersection.y >= -tileCount / 2 * length && intersection.y <= tileCount / 2 * length)
             return t;
 
         return -1;
