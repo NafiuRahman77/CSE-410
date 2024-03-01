@@ -472,6 +472,9 @@ void init()
 
     // give PERSPECTIVE parameters
     gluPerspective(80, 1, 1, 1000.0);
+    objects.clear();
+    point_lights.clear();
+    spot_lights.clear();
     loadData();
     
 }

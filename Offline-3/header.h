@@ -216,7 +216,7 @@ public:
 
     virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
     {
-        cout << "here" << endl;
+        //cout << "here" << endl;
         const double t = intersect(r, c, level);
 
         if (level == 0)
@@ -231,7 +231,9 @@ public:
         //  cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
+       // cout << intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << endl;
         Color intersectionPointColor = getColorAt(intersectionPoint);
+        //cout << intersectionPointColor.r << " " << intersectionPointColor.g << " " << intersectionPointColor.b << endl;
         c = intersectionPointColor * coefficients[0]; // ambient component
         // calculate normal at intersection point
         Vector3D normal = getNormal(intersectionPoint);
@@ -291,21 +293,24 @@ public:
 
             // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
 
-            Vector3D temp = spotlights[i].light_direction / sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
+            Vector3D temp = spotlights[i].light_direction / -sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
 
             double angle = acos(((lightDir * temp) * 1.0)) * 180 / 3.1416;
 
-            // cout<<angle<<endl;
+            double dot_product =lightDir * temp;
+
+            //cout<<angle<<endl;
             if (angle <= spotlights[i].cutoff_angle)
             {
-                // cout<<"dhuksi"<<endl;
-                Ray shadowRay(pointlights[i].light_pos, lightDir);
+                
+                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir*-1);
 
                 double dist = intersect(shadowRay, c, 0);
 
                 bool inShadow = false;
                 for (int j = 0; j < objects.size(); j++)
                 {
+                   // cout<<"dhuksi"<<endl;
                     double temp = objects[j]->intersect(shadowRay, c, 0);
                     if (temp > 0.00001 && temp < dist)
                     {
@@ -316,12 +321,13 @@ public:
 
                 if (!inShadow)
                 {
+                    //cout<<dot_product<<endl;
                     Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                     double lambert = -(lightDir * normal);
                     // cout<<lambert<<endl;
                     if (lambert >= 0)
                     {
-                        c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
+                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[1] * lambert* dot_product); // diffuse component
                     }
 
                     double phong = -(r.dir * reflectionDir);
@@ -329,11 +335,13 @@ public:
                     if (phong >= 0)
                     {
                         phong = pow(phong, shine);
-                        c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[2] * phong); // specular component
+                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[2] * phong * dot_product); // specular component
                     }
                 }
             }
         }
+
+        //cout<<c.r<<" "<<c.g<<" "<<c.b<<endl;
 
         // find nearest intersection object and do recursive call
 
@@ -514,7 +522,8 @@ public:
         }
 
         return -1;
-        // normalize r
+ 
+
         // Vector3D n_rdir = r.dir / sqrt(r.dir * r.dir);
 
         // Vector3D normal = (B - A) ^ (C - A);
