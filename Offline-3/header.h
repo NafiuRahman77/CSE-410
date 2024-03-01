@@ -164,7 +164,7 @@ public:
     {
         this->start = start;
         this->dir = dir;
-        if(dir*dir!=0)
+        if (dir * dir != 0)
             this->dir = dir / sqrt(dir * dir);
     }
 
@@ -183,6 +183,8 @@ public:
     int id = -1;
     std::vector<double> coefficients; // ambient, diffuse, specular, reflection coefficients
     int shine;                        // exponent term of specular component
+   
+
     Object()
     {
         color = Color(0, 0, 0);
@@ -219,21 +221,21 @@ public:
 
         if (level == 0)
             return t;
-        
-        if(level>=4)
+
+        if (level >= 4)
             return t;
 
         if (t <= 0)
 
             return -1;
-        // cout << "t: " << t << endl;
+        cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
         Color intersectionPointColor = getColorAt(intersectionPoint);
         c = intersectionPointColor * coefficients[0]; // ambient component
         // calculate normal at intersection point
-        Vector3D normal = getNormal(intersectionPoint); 
-    
+        Vector3D normal = getNormal(intersectionPoint);
+
         normal = normal / sqrt(normal * normal);
 
         for (int i = 0; i < pointlights.size(); i++)
@@ -246,7 +248,7 @@ public:
             Ray shadowRay(pointlights[i].light_pos, lightDir);
 
             double dist = intersect(shadowRay, c, 0);
-            
+
             bool inShadow = false;
             for (int j = 0; j < objects.size(); j++)
             {
@@ -262,14 +264,14 @@ public:
             {
                 Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                 double lambert = -(lightDir * normal);
-                //cout<<lambert<<endl;
+                // cout<<lambert<<endl;
                 if (lambert >= 0)
                 {
                     c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
                 }
 
-                double phong =  -(r.dir * reflectionDir);
-                //cout<<phong<<endl;
+                double phong = -(r.dir * reflectionDir);
+                // cout<<phong<<endl;
                 if (phong >= 0)
                 {
                     phong = pow(phong, shine);
@@ -285,7 +287,11 @@ public:
             double lightDistance = sqrt(lightDir * lightDir);
             lightDir = lightDir / lightDistance;
 
-            double angle = acos(lightDir * spotlights[i].light_direction);
+            Vector3D temp = spotlights[i].light_direction / sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
+
+            double angle = acos(lightDir * temp) * 180 / 3.1416;
+
+            // cout<<angle<<endl;
             if (angle <= spotlights[i].cutoff_angle)
             {
                 Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
@@ -330,41 +336,41 @@ public:
         //  start a little bit towards the reflection direction)
         //  to avoid self intersection
 
-          Vector3D reflectionDir = r.dir - normal * 2 * (r.dir * normal);
+        Vector3D reflectionDir = r.dir - normal * 2 * (r.dir * normal);
 
-            reflectionDir = reflectionDir / sqrt(reflectionDir * reflectionDir);
+        reflectionDir = reflectionDir / sqrt(reflectionDir * reflectionDir);
 
-            Ray reflectedRay(intersectionPoint + reflectionDir * 0.0001, reflectionDir);
-            double t_reflected = -1;
-            int nearest = -1;
-            for (int i = 0; i < objects.size(); i++)
+        Ray reflectedRay(intersectionPoint + reflectionDir * 0.0001, reflectionDir);
+        double t_reflected = -1;
+        int nearest = -1;
+        for (int i = 0; i < objects.size(); i++)
+        {
+            double temp = objects[i]->intersect(reflectedRay, c, 0);
+
+            if (temp > 0.00001 && (t_reflected < 0 || temp < t_reflected))
             {
-                double temp = objects[i]->intersect(reflectedRay, c, 0);
 
-                if (temp > 0.00001 && (t_reflected < 0 || temp < t_reflected))
-                {
-
-                    t_reflected = temp;
-                    nearest = i;
-                }
+                t_reflected = temp;
+                nearest = i;
             }
-            if (nearest != -1)
+        }
+        if (nearest != -1)
+        {
+            // cout << "inside reflected ray" << endl;
+            if (level == 1 && nearest == 1)
             {
-                // cout << "inside reflected ray" << endl;
-                if (level == 1 && nearest == 1)
-                {
 
-                    // cout<<normal.x<<" "<<normal.y<<" "<<normal.z<<endl;
-                    // cout<<r.dir.x<<" "<<r.dir.y<<" "<<r.dir.z<<endl;
-                    // cout<<"reflected"<<reflectedRay.dir.x<<" "<<reflectedRay.dir.y<<" "<<reflectedRay.dir.z<<endl;
-                    // cout<<endl;
-                }
-
-                Color reflectedColor;
-                objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1);
-                c = c + reflectedColor * coefficients[3];
+                // cout<<normal.x<<" "<<normal.y<<" "<<normal.z<<endl;
+                // cout<<r.dir.x<<" "<<r.dir.y<<" "<<r.dir.z<<endl;
+                // cout<<"reflected"<<reflectedRay.dir.x<<" "<<reflectedRay.dir.y<<" "<<reflectedRay.dir.z<<endl;
+                // cout<<endl;
             }
-        
+
+            Color reflectedColor;
+            objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1);
+            c = c + reflectedColor * coefficients[3];
+        }
+
         return t;
     }
     virtual double intersect(Ray r, Color &c, int level)
@@ -411,24 +417,23 @@ public:
         double D = B * B - 4 * A * C;
         if (D < 0)
             return -1;
-        if(A<0.00001)
-            return -C/B;
+        if (A < 0.00001)
+            return -C / B;
 
         double t1 = (-B + sqrt(D)) / (2 * A);
         double t2 = (-B - sqrt(D)) / (2 * A);
 
         if (t1 < 0 && t2 < 0)
             return -1;
-        
-        if(t1<0.0f)
+
+        if (t1 < 0.0f)
         {
             return -1;
         }
-        if(t2>=0.0f)
+        if (t2 >= 0.0f)
         {
             return t2;
         }
-        
     }
 
     virtual Vector3D getNormal(Vector3D pt)
@@ -670,8 +675,9 @@ public:
 class General : public Object
 {
 public:
-    double A, B, C, D, E, F, G, H, I, J;
-    double length, width, height;
+
+ double A, B, C, D, E, F, G, H, I, J;
+    
     General()
     {
     }
@@ -691,37 +697,104 @@ public:
 
         id = 3;
     }
+    void setLengthWidthHeight(double length, double width, double height)
+    {
+        this->length = length;
+        this->width = width;
+        this->height = height;
+    }   
 
     void draw()
     {
-        // draw a general quadratic surface using OpenGL
-
-        // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
+        // draw a cube
+        // cout<< A << " " << B << " " << C << " " << D << " " << E << " " << F << " " << G << " " << H << " " << I << " " << J << endl;
+        // cout << reference_point.x << " " << reference_point.y << " " << reference_point.z << endl;
+        // cout<<length<<" "<<width<<" "<<height<<endl;
+        // cout<<endl;
+        glPushMatrix();
+        {
+            glColor3f(color.r, color.g, color.b);
+            glTranslatef(reference_point.x, reference_point.y, reference_point.z);
+            glutSolidCube(10);
+        }
     }
-
-    double intersect(Ray r, Color c, int level)
+    virtual Color getColorAt(Vector3D pt)
     {
-        // find if the ray intersects the general quadratic surface
-        // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
-        // ○ Ray-quadric surface intersection (by plugging in Px = R0x + t*Rdx and similarly Py
-        // and Pz from the ray, into the general 3D quadratic equation)
-        // ○ If two values of t are obtained, check which one (or none or both) falls within the
-        // reference cube i.e. the bounding box within which the general quadric surface
-        // needs to be drawn. If any dimension of the bounding box is 0, no clipping along
-        // that dimension is required.
-        // ○ Normal = (𝜕F/𝜕x, 𝜕F/𝜕y, 𝜕F/𝜕z) [Substitute x, y, z values with that of the
-        // intersection point to obtain normals at different points]
-
-        double a = A * r.dir.x * r.dir.x + B * r.dir.y * r.dir.y + C * r.dir.z * r.dir.z + D * r.dir.x * r.dir.y + E * r.dir.x * r.dir.z + F * r.dir.y * r.dir.z;
-        double b = 2 * (A * r.start.x * r.dir.x + B * r.start.y * r.dir.y + C * r.start.z * r.dir.z) + D * (r.start.x * r.dir.y + r.start.y * r.dir.x) + E * (r.start.x * r.dir.z + r.start.z * r.dir.x) + F * (r.start.y * r.dir.z + r.start.z * r.dir.y) + G * r.dir.x + H * r.dir.y + I * r.dir.z;
-        double c_ = A * r.start.x * r.start.x + B * r.start.y * r.start.y + C * r.start.z * r.start.z + D * r.start.x * r.start.y + E * r.start.x * r.start.z + F * r.start.y * r.start.z + G * r.start.x + H * r.start.y + I * r.start.z + J;
-
-        double D = b * b - 4 * a * c_;
-
-        if (D < 0)
-            return -1;
-
-        double t1 = (-b + sqrt(D)) / (2 * a);
-        double t2 = (-b - sqrt(D)) / (2 * a);
+        return color;
     }
+    virtual Vector3D getNormal(Vector3D pt)
+    {
+        return Vector3D(2*A*pt.x + D*pt.y + E*pt.z + G,
+               2*B*pt.y + D*pt.x + F*pt.z + H,
+               2*C*pt.z + E*pt.x + F*pt.y + I);
+    }
+   
+
+    bool isValidIntersection(double t, double tValue, Ray& r, Vector3D& reference_point, double length, double width, double height) {
+    if (t > 0) {
+        Vector3D intersectionPoint = r.start + r.dir * tValue;
+        if (length != 0 && (intersectionPoint.x < reference_point.x || intersectionPoint.x > reference_point.x + length)) {
+            return false;
+        }
+        if (width != 0 && (intersectionPoint.y < reference_point.y || intersectionPoint.y > reference_point.y + width)) {
+            return false;
+        }
+        if (height != 0 && (intersectionPoint.z < reference_point.z || intersectionPoint.z > reference_point.z + height)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+virtual double intersect(Ray r, Color &c, int level) {
+    // find if the ray intersects the general quadratic surface
+    // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
+    // ○ Ray-quadric surface intersection (by plugging in Px = R0x + t*Rdx and similarly Py
+    // and Pz from the ray, into the general 3D quadratic equation)
+    // ○ If two values of t are obtained, check which one (or none or both) falls within the
+    // reference cube i.e. the bounding box within which the general quadric surface
+    // needs to be drawn. If any dimension of the bounding box is 0, no clipping along
+    // that dimension is required.
+    // ○ Normal = (𝜕F/𝜕x, 𝜕F/𝜕y, 𝜕F/𝜕z) [Substitute x, y, z values with that of the
+    // intersection point to obtain normals at different points]
+
+    double X0 = r.start.x;
+    double Y0 = r.start.y;
+    double Z0 = r.start.z;
+
+    double X1 = r.dir.x;
+    double Y1 = r.dir.y;
+    double Z1 = r.dir.z;
+
+    double C0 = A*X1*X1 + B*Y1*Y1 + C*Z1*Z1 + D*X1*Y1 + E*X1*Z1 + F*Y1*Z1;
+    double C1 = 2*A*X0*X1 + 2*B*Y0*Y1 + 2*C*Z0*Z1 + D*(X0*Y1 + X1*Y0) + E*(X0*Z1 + X1*Z0) + F*(Y0*Z1 + Y1*Z0) + G*X1 + H*Y1 + I*Z1;
+    double C2 = A*X0*X0 + B*Y0*Y0 + C*Z0*Z0 + D*X0*Y0 + E*X0*Z0 + F*Y0*Z0 + G*X0 + H*Y0 + I*Z0 + J;
+
+    double discriminant = C1*C1 - 4*C0*C2;
+    if (discriminant < 0) return -1;
+    if (fabs(C0) < 1e-5) {
+        return -C2 / C1;
+    }
+    double t1 = (-C1 - sqrt(discriminant)) / (2 * C0);
+    double t2 = (-C1 + sqrt(discriminant)) / (2 * C0);
+
+    if (t1 < 0 && t2 < 0) return -1;
+
+    // cout<<"t1 "<<t1<<" t2 "<<t2<<endl;
+
+    double t = INT_MAX;
+
+    if (isValidIntersection(t, t1, r, reference_point, length, width, height)) {
+        t = min(t, t1);
+    }
+
+    if (isValidIntersection(t, t2, r, reference_point, length, width, height)) {
+        t = min(t, t2);
+    }
+
+    if (t == INT_MAX) return -1;
+    return t;
+}
+
 };

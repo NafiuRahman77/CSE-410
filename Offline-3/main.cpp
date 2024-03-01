@@ -93,7 +93,7 @@ void loadData()
         if (object_type == "general")
         {
             double A, B, C, D, E, F, G, H, I, J;
-            double reference_x, reference_y, reference_z, length, width, height;
+            double reference_x, reference_y, reference_z, length=1, width=1, height=1;
             double color_r, color_g, color_b;
             double ambient, diffuse, specular, reflection, shininess;
 
@@ -109,11 +109,11 @@ void loadData()
             cout<<shininess<<endl;
 
             Object *g = new General(A, B, C, D, E, F, G, H, I, J);
-            g->reference_point = Vector3D(reference_x, reference_y, reference_z);
+            g->reference_point = Vector3D(reference_x, reference_y, reference_z);     
+            g->setColor(Color(color_r, color_g, color_b));
             g->length = length;
             g->width = width;
             g->height = height;
-            g->setColor(Color(color_r, color_g, color_b));
             g->setCoefficients(ambient, diffuse, specular, reflection);
             g->setShine(shininess);
             objects.push_back(g);
@@ -213,9 +213,7 @@ void capture(){
             // }
             if(nearest != -1)
             {
-                
                 double t = objects[nearest]->intersect_2(point_lights,spot_lights,objects,ray,f,1);
-                
                 image.set_pixel(i,j,f.r*255,f.g*255,f.b*255);
             }
 
@@ -254,7 +252,7 @@ void keyboardListener(unsigned char key, int x, int y)
     {
     
     case '0':
-    cout<<spot_lights.size()<<endl;
+        cout<<objects.size()<<endl;
         capture();
         
         break;
