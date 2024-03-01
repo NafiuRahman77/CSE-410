@@ -12,7 +12,8 @@ using namespace std;
 int rotate_angle = 2;
 double rotation_angle = pi * rotate_angle / 180;
 
-Vector3D pos(0, 150, 50), u(0, 0, 1), r(-1, 0, 0), l(0, -1, 0);
+ Vector3D pos(0, 150, 50), u(0, 0, 1), r(-1, 0, 0), l(0, -1, 0);
+// Vector3D pos(-10,-90,50), l(20,120,20), u(0,0,1), r(-1,0,0);
 vector<Object *> objects;
 vector<PointLight> point_lights;
 vector<SpotLight> spot_lights;
@@ -122,7 +123,7 @@ void loadData()
 
     Object *f = new Floor(400, 10);
 	f->setCoefficients(0.4, 0.2, 0.2, 0.2);
-    f->setShine(50);
+    f->setShine(10);
     objects.push_back(f);
 
     int number_of_point_lights;
@@ -144,6 +145,7 @@ void loadData()
         double x, y, z, intensity_r, intensity_g, intensity_b, direction_x, direction_y, direction_z, angle;
         scene_file >> x >> y >> z >> intensity_r >> intensity_g >> intensity_b >> direction_x >> direction_y >> direction_z >> angle;
         SpotLight sl(PointLight(Vector3D(x, y, z), Color(intensity_r, intensity_g, intensity_b)), Vector3D(direction_x, direction_y, direction_z), angle);
+        
         spot_lights.push_back(sl);
     }
 
@@ -436,27 +438,6 @@ void display()
     glMatrixMode(GL_MODELVIEW);
 
     drawAxes();
-
-    // draw the objects
-    // Sphere s(Vector3D(0, 0, 20), 20);
-    // s.setColor(Color(1, 0, 0));
-    // s.draw();
-    // 50 30 0
-    // 70 60 0
-    // 50 45 50
-    // Triangle t(Vector3D(50, 30, 0), Vector3D(70, 60, 0), Vector3D(50, 45, 50));
-    // t.setColor(Color(0, 1, 0));
-    // t.draw();
-
-    // Triangle t1(Vector3D(70, 60, 0), Vector3D(30, 60, 0), Vector3D(50, 45, 50));
-    // t1.setColor(Color(1, 0, 0));
-    // t1.draw();
-
-    // Triangle t2(Vector3D(30, 60, 0), Vector3D(50, 30, 0), Vector3D(50, 45, 50));
-    // t2.setColor(Color(0, 0, 1));
-    // t2.draw();
-    // Floor f(400, 10);
-    // f.draw();
 
     for (int i = 0; i < objects.size(); i++)
     {

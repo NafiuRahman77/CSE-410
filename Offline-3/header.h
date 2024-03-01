@@ -183,7 +183,6 @@ public:
     int id = -1;
     std::vector<double> coefficients; // ambient, diffuse, specular, reflection coefficients
     int shine;                        // exponent term of specular component
-   
 
     Object()
     {
@@ -217,6 +216,7 @@ public:
 
     virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
     {
+        cout << "here" << endl;
         const double t = intersect(r, c, level);
 
         if (level == 0)
@@ -228,7 +228,7 @@ public:
         if (t <= 0)
 
             return -1;
-        cout << "t: " << t << endl;
+        //  cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
         Color intersectionPointColor = getColorAt(intersectionPoint);
@@ -241,6 +241,7 @@ public:
         for (int i = 0; i < pointlights.size(); i++)
         {
             Vector3D lightDir = intersectionPoint - pointlights[i].light_pos;
+            // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
 
             double lightDistance = sqrt(lightDir * lightDir);
             lightDir = lightDir / lightDistance;
@@ -284,19 +285,21 @@ public:
         {
             Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
 
+            // cout<<spotlights[i].point_light.light_pos.x<<" "<<spotlights[i].point_light.light_pos.y<<" "<<spotlights[i].point_light.light_pos.z<<endl;
             double lightDistance = sqrt(lightDir * lightDir);
             lightDir = lightDir / lightDistance;
 
+            // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
+
             Vector3D temp = spotlights[i].light_direction / sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
 
-            double angle = acos(lightDir * temp) * 180 / 3.1416;
+            double angle = acos(((lightDir * temp) * 1.0)) * 180 / 3.1416;
 
             // cout<<angle<<endl;
             if (angle <= spotlights[i].cutoff_angle)
             {
-                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
-                // if intersectionPoint is in shadow, the diffuse
-                // and specular components need not be calculated
+                // cout<<"dhuksi"<<endl;
+                Ray shadowRay(pointlights[i].light_pos, lightDir);
 
                 double dist = intersect(shadowRay, c, 0);
 
@@ -310,20 +313,23 @@ public:
                         break;
                     }
                 }
+
                 if (!inShadow)
                 {
                     Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                     double lambert = -(lightDir * normal);
-                    if (lambert > 0)
+                    // cout<<lambert<<endl;
+                    if (lambert >= 0)
                     {
-                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[1] * lambert); // diffuse component
+                        c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
                     }
 
                     double phong = -(r.dir * reflectionDir);
-                    if (phong > 0)
+                    // cout<<phong<<endl;
+                    if (phong >= 0)
                     {
                         phong = pow(phong, shine);
-                        c = c + (Color(intersectionPointColor.r * spotlights[i].point_light.color.r, intersectionPointColor.g * spotlights[i].point_light.color.g, intersectionPointColor.b * spotlights[i].point_light.color.b) * coefficients[2] * phong); // specular component
+                        c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[2] * phong); // specular component
                     }
                 }
             }
@@ -675,9 +681,8 @@ public:
 class General : public Object
 {
 public:
+    double A, B, C, D, E, F, G, H, I, J;
 
- double A, B, C, D, E, F, G, H, I, J;
-    
     General()
     {
     }
@@ -702,7 +707,7 @@ public:
         this->length = length;
         this->width = width;
         this->height = height;
-    }   
+    }
 
     void draw()
     {
@@ -724,77 +729,87 @@ public:
     }
     virtual Vector3D getNormal(Vector3D pt)
     {
-        return Vector3D(2*A*pt.x + D*pt.y + E*pt.z + G,
-               2*B*pt.y + D*pt.x + F*pt.z + H,
-               2*C*pt.z + E*pt.x + F*pt.y + I);
+        return Vector3D(2 * A * pt.x + D * pt.y + E * pt.z + G,
+                        2 * B * pt.y + D * pt.x + F * pt.z + H,
+                        2 * C * pt.z + E * pt.x + F * pt.y + I);
     }
-   
 
-    bool isValidIntersection(double t, double tValue, Ray& r, Vector3D& reference_point, double length, double width, double height) {
-    if (t > 0) {
-        Vector3D intersectionPoint = r.start + r.dir * tValue;
-        if (length != 0 && (intersectionPoint.x < reference_point.x || intersectionPoint.x > reference_point.x + length)) {
-            return false;
+    bool isValidIntersection(double t, double tValue, Ray &r, Vector3D &reference_point, double length, double width, double height)
+    {
+        if (t > 0)
+        {
+            Vector3D intersectionPoint = r.start + r.dir * tValue;
+            if (length != 0 && (intersectionPoint.x < reference_point.x || intersectionPoint.x > reference_point.x + length))
+            {
+                return false;
+            }
+            if (width != 0 && (intersectionPoint.y < reference_point.y || intersectionPoint.y > reference_point.y + width))
+            {
+                return false;
+            }
+            if (height != 0 && (intersectionPoint.z < reference_point.z || intersectionPoint.z > reference_point.z + height))
+            {
+                return false;
+            }
+            return true;
         }
-        if (width != 0 && (intersectionPoint.y < reference_point.y || intersectionPoint.y > reference_point.y + width)) {
-            return false;
+        return false;
+    }
+
+    virtual double intersect(Ray r, Color &c, int level)
+    {
+        // find if the ray intersects the general quadratic surface
+        // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
+        // ○ Ray-quadric surface intersection (by plugging in Px = R0x + t*Rdx and similarly Py
+        // and Pz from the ray, into the general 3D quadratic equation)
+        // ○ If two values of t are obtained, check which one (or none or both) falls within the
+        // reference cube i.e. the bounding box within which the general quadric surface
+        // needs to be drawn. If any dimension of the bounding box is 0, no clipping along
+        // that dimension is required.
+        // ○ Normal = (𝜕F/𝜕x, 𝜕F/𝜕y, 𝜕F/𝜕z) [Substitute x, y, z values with that of the
+        // intersection point to obtain normals at different points]
+
+        double X0 = r.start.x;
+        double Y0 = r.start.y;
+        double Z0 = r.start.z;
+
+        double X1 = r.dir.x;
+        double Y1 = r.dir.y;
+        double Z1 = r.dir.z;
+
+        double C0 = A * X1 * X1 + B * Y1 * Y1 + C * Z1 * Z1 + D * X1 * Y1 + E * X1 * Z1 + F * Y1 * Z1;
+        double C1 = 2 * A * X0 * X1 + 2 * B * Y0 * Y1 + 2 * C * Z0 * Z1 + D * (X0 * Y1 + X1 * Y0) + E * (X0 * Z1 + X1 * Z0) + F * (Y0 * Z1 + Y1 * Z0) + G * X1 + H * Y1 + I * Z1;
+        double C2 = A * X0 * X0 + B * Y0 * Y0 + C * Z0 * Z0 + D * X0 * Y0 + E * X0 * Z0 + F * Y0 * Z0 + G * X0 + H * Y0 + I * Z0 + J;
+
+        double discriminant = C1 * C1 - 4 * C0 * C2;
+        if (discriminant < 0)
+            return -1;
+        if (fabs(C0) < 1e-5)
+        {
+            return -C2 / C1;
         }
-        if (height != 0 && (intersectionPoint.z < reference_point.z || intersectionPoint.z > reference_point.z + height)) {
-            return false;
+        double t1 = (-C1 - sqrt(discriminant)) / (2 * C0);
+        double t2 = (-C1 + sqrt(discriminant)) / (2 * C0);
+
+        if (t1 < 0 && t2 < 0)
+            return -1;
+
+        // cout<<"t1 "<<t1<<" t2 "<<t2<<endl;
+
+        double t = INT_MAX;
+
+        if (isValidIntersection(t, t1, r, reference_point, length, width, height))
+        {
+            t = min(t, t1);
         }
-        return true;
+
+        if (isValidIntersection(t, t2, r, reference_point, length, width, height))
+        {
+            t = min(t, t2);
+        }
+
+        if (t == INT_MAX)
+            return -1;
+        return t;
     }
-    return false;
-}
-
-virtual double intersect(Ray r, Color &c, int level) {
-    // find if the ray intersects the general quadratic surface
-    // Equation: F(x,y,z) = Ax2+By2+Cz2+Dxy+Exz+Fyz+Gx+Hy+Iz+J = 0
-    // ○ Ray-quadric surface intersection (by plugging in Px = R0x + t*Rdx and similarly Py
-    // and Pz from the ray, into the general 3D quadratic equation)
-    // ○ If two values of t are obtained, check which one (or none or both) falls within the
-    // reference cube i.e. the bounding box within which the general quadric surface
-    // needs to be drawn. If any dimension of the bounding box is 0, no clipping along
-    // that dimension is required.
-    // ○ Normal = (𝜕F/𝜕x, 𝜕F/𝜕y, 𝜕F/𝜕z) [Substitute x, y, z values with that of the
-    // intersection point to obtain normals at different points]
-
-    double X0 = r.start.x;
-    double Y0 = r.start.y;
-    double Z0 = r.start.z;
-
-    double X1 = r.dir.x;
-    double Y1 = r.dir.y;
-    double Z1 = r.dir.z;
-
-    double C0 = A*X1*X1 + B*Y1*Y1 + C*Z1*Z1 + D*X1*Y1 + E*X1*Z1 + F*Y1*Z1;
-    double C1 = 2*A*X0*X1 + 2*B*Y0*Y1 + 2*C*Z0*Z1 + D*(X0*Y1 + X1*Y0) + E*(X0*Z1 + X1*Z0) + F*(Y0*Z1 + Y1*Z0) + G*X1 + H*Y1 + I*Z1;
-    double C2 = A*X0*X0 + B*Y0*Y0 + C*Z0*Z0 + D*X0*Y0 + E*X0*Z0 + F*Y0*Z0 + G*X0 + H*Y0 + I*Z0 + J;
-
-    double discriminant = C1*C1 - 4*C0*C2;
-    if (discriminant < 0) return -1;
-    if (fabs(C0) < 1e-5) {
-        return -C2 / C1;
-    }
-    double t1 = (-C1 - sqrt(discriminant)) / (2 * C0);
-    double t2 = (-C1 + sqrt(discriminant)) / (2 * C0);
-
-    if (t1 < 0 && t2 < 0) return -1;
-
-    // cout<<"t1 "<<t1<<" t2 "<<t2<<endl;
-
-    double t = INT_MAX;
-
-    if (isValidIntersection(t, t1, r, reference_point, length, width, height)) {
-        t = min(t, t1);
-    }
-
-    if (isValidIntersection(t, t2, r, reference_point, length, width, height)) {
-        t = min(t, t2);
-    }
-
-    if (t == INT_MAX) return -1;
-    return t;
-}
-
 };
