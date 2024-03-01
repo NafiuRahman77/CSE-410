@@ -121,7 +121,7 @@ void loadData()
     }
 
     Object *f = new Floor(400, 10);
-	f->setCoefficients(0.4, 0.1, 0.2, 0.2);
+	f->setCoefficients(0.4, 0.2, 0.2, 0.2);
     f->setShine(50);
     objects.push_back(f);
 
