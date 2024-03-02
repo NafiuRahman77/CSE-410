@@ -216,7 +216,6 @@ public:
 
     virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
     {
-        //cout << "here" << endl;
         const double t = intersect(r, c, level);
 
         if (level == 0)
@@ -228,14 +227,10 @@ public:
         if (t <= 0)
 
             return -1;
-        //  cout << "t: " << t << endl;
 
         Vector3D intersectionPoint = r.start + (r.dir * t);
-       // cout << intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << endl;
         Color intersectionPointColor = getColorAt(intersectionPoint);
-        //cout << intersectionPointColor.r << " " << intersectionPointColor.g << " " << intersectionPointColor.b << endl;
         c = intersectionPointColor * coefficients[0]; // ambient component
-        // calculate normal at intersection point
         Vector3D normal = getNormal(intersectionPoint);
 
         normal = normal / sqrt(normal * normal);
@@ -243,7 +238,6 @@ public:
         for (int i = 0; i < pointlights.size(); i++)
         {
             Vector3D lightDir = intersectionPoint - pointlights[i].light_pos;
-            // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
 
             double lightDistance = sqrt(lightDir * lightDir);
             lightDir = lightDir / lightDistance;
@@ -267,14 +261,12 @@ public:
             {
                 Vector3D reflectionDir = lightDir - normal * 2 * (lightDir * normal);
                 double lambert = -(lightDir * normal);
-                // cout<<lambert<<endl;
                 if (lambert >= 0)
                 {
                     c = c + (Color(intersectionPointColor.r * pointlights[i].color.r, intersectionPointColor.g * pointlights[i].color.g, intersectionPointColor.b * pointlights[i].color.b) * coefficients[1] * lambert); // diffuse component
                 }
 
                 double phong = -(r.dir * reflectionDir);
-                // cout<<phong<<endl;
                 if (phong >= 0)
                 {
                     phong = pow(phong, shine);
@@ -287,11 +279,9 @@ public:
         {
             Vector3D lightDir = intersectionPoint - spotlights[i].point_light.light_pos;
 
-            // cout<<spotlights[i].point_light.light_pos.x<<" "<<spotlights[i].point_light.light_pos.y<<" "<<spotlights[i].point_light.light_pos.z<<endl;
             double lightDistance = sqrt(lightDir * lightDir);
             lightDir = lightDir / lightDistance;
 
-            // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
 
             Vector3D temp = spotlights[i].light_direction / sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
 
@@ -341,7 +331,6 @@ public:
             }
         }
 
-        //cout<<c.r<<" "<<c.g<<" "<<c.b<<endl;
 
         // find nearest intersection object and do recursive call
 
@@ -370,15 +359,6 @@ public:
         }
         if (nearest != -1)
         {
-            // cout << "inside reflected ray" << endl;
-            if (level == 1 && nearest == 1)
-            {
-
-                // cout<<normal.x<<" "<<normal.y<<" "<<normal.z<<endl;
-                // cout<<r.dir.x<<" "<<r.dir.y<<" "<<r.dir.z<<endl;
-                // cout<<"reflected"<<reflectedRay.dir.x<<" "<<reflectedRay.dir.y<<" "<<reflectedRay.dir.z<<endl;
-                // cout<<endl;
-            }
 
             Color reflectedColor;
             objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1);
@@ -523,83 +503,9 @@ public:
         }
 
         return -1;
- 
 
-        // Vector3D n_rdir = r.dir / sqrt(r.dir * r.dir);
-
-        // Vector3D normal = (B - A) ^ (C - A);
-        // normal = normal / sqrt(normal * normal);
-
-        // double D = -(normal * A);
-        // double denominator = normal * n_rdir;
-        // if (fabs(denominator) < 0.00001)
-        //     return -1;
-        // double t = -1 * (normal * r.start + D) / denominator;
-
-        // if (t < 0)
-        //     return -1;
-
-        // Vector3D e1 = B - A;
-        // Vector3D e2 = C - A;
-        // Vector3D P = r.start + (n_rdir * t) - A;
-        // float a = -1.0f;
-        // float b = -1.0f;
-
-        // if (abs(e1.x * e2.y - e1.y * e2.x) >= 0.000001f && abs(e2.x * e1.y - e1.x * e2.y) >= 0.000001f)
-        // {
-        //     a = (P.x * e2.y - P.y * e2.x) / (e1.x * e2.y - e1.y * e2.x);
-        //     b = (P.x * e1.y - P.y * e1.x) / (e2.x * e1.y - e1.x * e2.y);
-        // }
-        // else if (abs(e1.y * e2.z - e1.z * e2.y) >= 0.000001f && abs(e2.y * e1.z - e1.y * e2.z) >= 0.000001f)
-        // {
-        //     a = (P.y * e2.z - P.z * e2.y) / (e1.y * e2.z - e1.z * e2.y);
-        //     b = (P.y * e1.z - P.z * e1.y) / (e2.y * e1.z - e1.y * e2.z);
-        // }
-        // else if (abs(e1.z * e2.x - e1.x * e2.z) >= 0.000001f && abs(e2.x * e1.x - e1.z * e2.x) >= 0.000001f)
-        // {
-        //     a = (P.z * e2.x - P.x * e2.z) / (e1.z * e2.x - e1.x * e2.z);
-        //     b = (P.z * e1.x - P.x * e1.z) / (e2.z * e1.x - e1.z * e2.x);
-        // }
-        // else
-        // {
-        //     return -3.0f;
-        // }
-
-        // if (a < 0.0f)
-        // {
-        //     return -4.0f;
-        // }
-
-        // if (a > 1.0f)
-        // {
-        //     return -5.0f;
-        // }
-
-        // if (b < 0.0f)
-        // {
-        //     return -6.0f;
-        // }
-
-        // if (b > 1.0f)
-        // {
-        //     return -7.0f;
-        // }
-
-        // if (!(a + b <= 1.0f))
-        // {
-        //     return -8.0f;
-        // }
-
-        // return t;
+      
     }
-
-    // find normal of the triangle
-    // virtual Vector3D getNormal()
-    // {
-    //     Vector3D normal = (B - A) ^ (C - A);
-    //     normal = normal / sqrt(normal * normal);
-    //     return normal;
-    // }
 
     virtual Vector3D getNormal(Vector3D pt)
     {
