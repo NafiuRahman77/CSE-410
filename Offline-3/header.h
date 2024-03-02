@@ -440,14 +440,15 @@ public:
         if (t1 < 0 && t2 < 0)
             return -1;
 
-        if (t1 < 0.0f)
+        if (t1 >= 0.0f && t2< 0.0f)
         {
-            return -1;
+            return t1;
         }
-        if (t2 >= 0.0f)
+        if (t2 >= 0.0f && t1< 0.0f)
         {
             return t2;
         }
+        return min(t1, t2);
     }
 
     virtual Vector3D getNormal(Vector3D pt)
