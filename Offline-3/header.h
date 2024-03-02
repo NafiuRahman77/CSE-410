@@ -293,7 +293,7 @@ public:
 
             // cout<< lightDir.x<<" "<<lightDir.y<<" "<<lightDir.z<<endl;
 
-            Vector3D temp = spotlights[i].light_direction / -sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
+            Vector3D temp = spotlights[i].light_direction / sqrt(spotlights[i].light_direction * spotlights[i].light_direction);
 
             double angle = acos(((lightDir * temp) * 1.0)) * 180 / 3.1416;
 
@@ -303,7 +303,7 @@ public:
             if (angle <= spotlights[i].cutoff_angle)
             {
                 
-                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir*-1);
+                Ray shadowRay(spotlights[i].point_light.light_pos, lightDir);
 
                 double dist = intersect(shadowRay, c, 0);
 
