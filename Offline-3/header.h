@@ -719,19 +719,60 @@ public:
         this->height = height;
     }
 
-    void draw()
+   void draw()
     {
-        // draw a cube
-        // cout<< A << " " << B << " " << C << " " << D << " " << E << " " << F << " " << G << " " << H << " " << I << " " << J << endl;
-        // cout << reference_point.x << " " << reference_point.y << " " << reference_point.z << endl;
-        // cout<<length<<" "<<width<<" "<<height<<endl;
-        // cout<<endl;
+        int dim = max(length, max(width, height));
+
         glPushMatrix();
         {
             glColor3f(color.r, color.g, color.b);
+
             glTranslatef(reference_point.x, reference_point.y, reference_point.z);
-            glutSolidCube(10);
+
+            glBegin(GL_LINES);
+            {
+                // Front face
+                glVertex3f(-dim / 2, -dim / 2, dim / 2);
+                glVertex3f(dim / 2, -dim / 2, dim / 2);
+
+                glVertex3f(dim / 2, -dim / 2, dim / 2);
+                glVertex3f(dim / 2, dim / 2, dim / 2);
+
+                glVertex3f(dim / 2, dim / 2, dim / 2);
+                glVertex3f(-dim / 2, dim / 2, dim / 2);
+
+                glVertex3f(-dim / 2, dim / 2, dim / 2);
+                glVertex3f(-dim / 2, -dim / 2, dim / 2);
+
+                // Back face
+                glVertex3f(-dim / 2, -dim / 2, -dim / 2);
+                glVertex3f(dim / 2, -dim / 2, -dim / 2);
+
+                glVertex3f(dim / 2, -dim / 2, -dim / 2);
+                glVertex3f(dim / 2, dim / 2, -dim / 2);
+
+                glVertex3f(dim / 2, dim / 2, -dim / 2);
+                glVertex3f(-dim / 2, dim / 2, -dim / 2);
+
+                glVertex3f(-dim / 2, dim / 2, -dim / 2);
+                glVertex3f(-dim / 2, -dim / 2, -dim / 2);
+
+                // Connecting lines
+                glVertex3f(-dim / 2, -dim / 2, dim / 2);
+                glVertex3f(-dim / 2, -dim / 2, -dim / 2);
+
+                glVertex3f(dim / 2, -dim / 2, dim / 2);
+                glVertex3f(dim / 2, -dim / 2, -dim / 2);
+
+                glVertex3f(dim / 2, dim / 2, dim / 2);
+                glVertex3f(dim / 2, dim / 2, -dim / 2);
+
+                glVertex3f(-dim / 2, dim / 2, dim / 2);
+                glVertex3f(-dim / 2, dim / 2, -dim / 2);
+            }
+            glEnd();
         }
+        glPopMatrix();
     }
     virtual Color getColorAt(Vector3D pt)
     {
