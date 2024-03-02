@@ -189,7 +189,7 @@ void capture(){
             for (int k = 0; k < objects.size(); k++)
             {
                 Color c(0,0,0);
-                t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,0);
+                t = objects[k]->intersect_2(point_lights,spot_lights,objects,ray,c,0,recursion_level);
 
 
                 if(t <= 0)
@@ -217,7 +217,7 @@ void capture(){
             // }
             if(nearest != -1)
             {
-                double t = objects[nearest]->intersect_2(point_lights,spot_lights,objects,ray,f,1);
+                double t = objects[nearest]->intersect_2(point_lights,spot_lights,objects,ray,f,1,recursion_level);
                 image.set_pixel(i,j,f.r*255,f.g*255,f.b*255);
             }
 
@@ -495,7 +495,7 @@ int main(int argc, char **argv)
     glutInitWindowPosition(0, 0);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB); // Depth, Double buffer, RGB color
 
-    glutCreateWindow("Task 1 and 2: Cube and Sphere");
+    glutCreateWindow("Ray Tracing");
 
     init();
 

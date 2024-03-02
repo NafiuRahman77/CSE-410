@@ -781,7 +781,7 @@ int main(int argc, char **argv)
 	glutInitWindowPosition(1000, 100);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB); // Depth, Double buffer, RGB color
 
-	glutCreateWindow("Task 1 and 2: Cube and Sphere");
+	glutCreateWindow("Rolling Ball");
 
 	init();
 

@@ -214,14 +214,14 @@ public:
         return color;
     }
 
-    virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level)
+    virtual double intersect_2(std::vector<PointLight> pointlights, std::vector<SpotLight> spotlights, std::vector<Object *> objects, Ray r, Color &c, int level, int rec_level)
     {
         const double t = intersect(r, c, level);
 
         if (level == 0)
             return t;
 
-        if (level >= 4)
+        if (level >= rec_level)
             return t;
 
         if (t <= 0)
@@ -361,7 +361,7 @@ public:
         {
 
             Color reflectedColor;
-            objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1);
+            objects[nearest]->intersect_2(pointlights, spotlights, objects, reflectedRay, reflectedColor, level + 1, rec_level);
             c = c + reflectedColor * coefficients[3];
         }
 
