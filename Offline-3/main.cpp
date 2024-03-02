@@ -22,12 +22,14 @@ bitmap_image image;
 
 int recursion_level, image_height, image_width;
 
+int imageCount = 0;
+
 void loadData()
 {
 
     // load from scene.txt
     ifstream scene_file;
-    scene_file.open("scene_test.txt");
+    scene_file.open("scene_test2.txt");
 
     scene_file >> recursion_level;
     scene_file >> image_width;
@@ -225,8 +227,9 @@ void capture(){
     }
 
 
-    image.save_image("out.bmp");
+    image.save_image("out2/"+to_string(imageCount)+".bmp");
     cout<<"Image saved"<<endl;
+    imageCount++;
 
 }
 
