@@ -1,7 +1,7 @@
 
 #pragma once
 #include <bits/stdc++.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <iostream>
 
 using namespace std;
