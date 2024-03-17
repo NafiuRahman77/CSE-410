@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
 
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include "header.h"
 #include "bitmap_image.hpp"
 
@@ -488,6 +488,19 @@ void animate()
     glutPostRedisplay();
 }
 
+void close()
+{
+    
+    for (int i = 0; i < objects.size(); i++)
+    {
+        cout<<"Closing"<<endl;
+        delete objects[i];
+    }
+    objects.clear();
+    point_lights.clear();
+    spot_lights.clear();
+}
+
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
@@ -507,7 +520,7 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboardListener);
     glutSpecialFunc(specialKeyListener);
     glutMouseFunc(mouseListener);
-
+    glutCloseFunc(close);
     glutMainLoop(); // The main loop of OpenGL
 
     return 0;
