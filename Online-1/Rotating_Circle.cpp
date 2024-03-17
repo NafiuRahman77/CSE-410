@@ -102,7 +102,7 @@ int main(int argc, char** argv){
     glutDisplayFunc(display);
     glutIdleFunc(idle);
     glutKeyboardFunc(keyboardListener);
-    anim8(0);
+   
     glutMainLoop();
     return 0;
 }
