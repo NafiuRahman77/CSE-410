@@ -1,2 +1,2 @@
-g++ rolling_ball.cpp -o demo -lglut -lGLU -lGL
+g++ magic_cube.cpp -o demo -lglut -lGLU -lGL
 ./demo
